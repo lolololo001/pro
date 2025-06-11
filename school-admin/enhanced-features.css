@@ -1,0 +1,162 @@
+/**
+ * Enhanced Features CSS
+ * Styles for enhanced search functionality and confirmation dialogs
+ */
+
+/* Enhanced Search Styles */
+.enhanced-search-container {
+    margin-bottom: 1.5rem;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.search-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    max-width: 600px;
+    margin-bottom: 0.5rem;
+}
+
+.search-icon {
+    position: absolute;
+    left: 12px;
+    color: var(--primary-color);
+    font-size: 1rem;
+    z-index: 1;
+}
+
+.enhanced-search-input {
+    width: 100%;
+    padding: 0.75rem 2.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 50px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.enhanced-search-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0, 112, 74, 0.1);
+    outline: none;
+}
+
+.search-clear-btn {
+    position: absolute;
+    right: 12px;
+    background: none;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.search-clear-btn:hover {
+    color: var(--danger-color);
+    background-color: rgba(244, 67, 54, 0.1);
+}
+
+.search-results-info {
+    font-size: 0.9rem;
+    color: #666;
+    margin-left: 12px;
+}
+
+.search-empty-state {
+    text-align: center;
+    padding: 3rem;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.search-empty-state .empty-icon {
+    font-size: 3rem;
+    color: #ccc;
+    margin-bottom: 1rem;
+}
+
+.search-empty-state .empty-text {
+    font-size: 1.2rem;
+    color: #666;
+    margin-bottom: 0.5rem;
+}
+
+.search-empty-state p {
+    color: #999;
+}
+
+/* Search Highlight */
+mark.search-highlight {
+    background-color: rgba(255, 213, 79, 0.4);
+    padding: 0.1em 0.2em;
+    border-radius: 3px;
+    color: inherit;
+    font-weight: 500;
+}
+
+/* Enhanced Confirmation Modal */
+#enhancedConfirmationModal .modal-content {
+    animation: modalBounceIn 0.3s;
+}
+
+#enhancedConfirmationModal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#enhancedConfirmationModal .modal-body {
+    padding: 1.5rem;
+}
+
+#enhancedConfirmationModal #confirmModalMessage {
+    font-size: 1.1rem;
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#enhancedConfirmationModal .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes modalBounceIn {
+    0% { transform: scale(0.8); opacity: 0; }
+    70% { transform: scale(1.05); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+    .search-input-wrapper {
+        max-width: 100%;
+    }
+    
+    #enhancedConfirmationModal .form-actions {
+        flex-direction: column-reverse;
+    }
+    
+    #enhancedConfirmationModal .form-actions button {
+        width: 100%;
+    }
+}

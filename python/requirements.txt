@@ -1,0 +1,3 @@
+# Python dependencies for SchoolComm sentiment analysis
+nltk==3.8.1
+textblob==0.17.1
