@@ -143,16 +143,12 @@ try {
 // Fetch recent students safely
 try {
     $result = $conn->query("SHOW TABLES LIKE 'students'");
-    if ($result->num_rows > 0) {
-        $stmt = $conn->prepare('SELECT id, first_name, last_name, admission_number, admission_date as created_at FROM students WHERE school_id = ? ORDER BY created_at DESC LIMIT 5');
+    if ($result->num_rows > 0) {        $stmt = $conn->prepare('SELECT id, CONCAT(first_name, " ", last_name) as name, admission_number as registration_number, admission_date as created_at FROM students WHERE school_id = ? ORDER BY created_at DESC LIMIT 5');
         if ($stmt) {
             $stmt->bind_param('i', $school_id);
             $stmt->execute();
             $res = $stmt->get_result();
             while ($row = $res->fetch_assoc()) {
-                $row['name'] = $row['first_name'] . ' ' . $row['last_name'];
-                $row['registration_number'] = $row['admission_number'];
-                unset($row['first_name'], $row['last_name'], $row['admission_number']);
                 $recent_students[] = $row;
             }
             $stmt->close();
@@ -585,6 +581,80 @@ try {
             color: #c62828;
         }
         
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            opacity: 0;
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 500px;
+        }
+
+        .modal-header {
+            padding: 1.2rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+            padding: 0.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.3s;
+        }
+
+        .close-modal:hover {
+            color: var(--primary-color);
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+        
         /* Responsive Styles */
         @media (max-width: 992px) {
             .sidebar {
@@ -652,20 +722,8 @@ try {
                     <a href="dashboard.php">Home</a>
                     <span>/</span>
                     <span>Dashboard</span>
-                </div>
-            </div>
-            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-                <button class="btn" onclick="openModal('addStudentMultiStepModal')" style="background-color: var(--primary-color); color: white; padding: 0.5rem 0.8rem; border-radius: 4px; text-decoration: none; display: flex; align-items: center; gap: 0.3rem; font-size: 0.85rem; border: none; cursor: pointer;">
-                    <i class="fas fa-user-graduate"></i> Add Student
-                </button>
-                <button class="btn" onclick="openModal('addTeacherModal')" style="background-color: var(--primary-color); color: white; padding: 0.5rem 0.8rem; border-radius: 4px; text-decoration: none; display: flex; align-items: center; gap: 0.3rem; font-size: 0.85rem; border: none; cursor: pointer;">
-                    <i class="fas fa-chalkboard-teacher"></i> Add Teacher
-                </button>
-                <button class="btn" onclick="openModal('addClassModal')" style="background-color: var(--primary-color); color: white; padding: 0.5rem 0.8rem; border-radius: 4px; text-decoration: none; display: flex; align-items: center; gap: 0.3rem; font-size: 0.85rem; border: none; cursor: pointer;">
-                    <i class="fas fa-school"></i> Add Class
-                </button>
-                <button class="btn" onclick="openModal('addDepartmentModal')" style="background-color: var(--primary-color); color: white; padding: 0.5rem 0.8rem; border-radius: 4px; text-decoration: none; display: flex; align-items: center; gap: 0.3rem; font-size: 0.85rem; border: none; cursor: pointer;">
-                    <i class="fas fa-building"></i> Add Dept
+                </div>            </div>            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">                <button type="button" onclick="openModal('newAnnouncementModal')" class="btn announce-btn" style="background: linear-gradient(135deg, var(--primary-color), #2563eb); color: white; padding: 0.8rem 1.2rem; border-radius: 8px; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; border: none; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: all 0.3s ease;">
+                    <i class="fas fa-bullhorn"></i> New Announcement
                 </button>
             </div>
         </div>
@@ -741,6 +799,26 @@ try {
                 <?php 
                 echo $_SESSION['logo_error']; 
                 unset($_SESSION['logo_error']);
+                ?>
+            </div>
+        <?php endif; ?>
+        
+        <?php if (isset($_SESSION['announcement_success'])): ?>
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle"></i>
+                <?php 
+                echo $_SESSION['announcement_success']; 
+                unset($_SESSION['announcement_success']);
+                ?>
+            </div>
+        <?php endif; ?>
+        
+        <?php if (isset($_SESSION['announcement_error'])): ?>
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle"></i>
+                <?php 
+                echo $_SESSION['announcement_error']; 
+                unset($_SESSION['announcement_error']);
                 ?>
             </div>
         <?php endif; ?>
@@ -1139,12 +1217,11 @@ try {
     </div>
     
     <!-- Modal forms are included from modals.php -->
-    
-    <!-- Modal forms are included at the end of the body -->
+      <!-- Modal forms are included at the end of the body -->
 
     <!-- Include Student Registration Modal -->
     <?php include 'student_registration_modal.php'; ?>
-    
+
     <!-- Add Teacher Modal -->
     <div id="addTeacherModal" class="modal">
         <div class="modal-content">
@@ -1249,8 +1326,7 @@ try {
                             <div class="form-group">
                                 <label for="class_name">Class Name <span class="required">*</span></label>
                                 <input type="text" id="class_name" name="class_name" class="form-control" required>
-                                <div id="class_name-error" class="error-message"></div>
-                            </div>
+                                <div id="class_name-error" class="error-message"></div>                            </div>
                             <div class="form-group">
                                 <label for="grade_level">Grade Level <span class="required">*</span></label>
                                 <select id="grade_level" name="grade_level" class="form-control" required>
@@ -1333,115 +1409,368 @@ try {
                 </form>
             </div>
         </div>
+    </div>    <!-- New Announcement Modal -->
+    <div id="newAnnouncementModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-bullhorn"></i> New Announcement</h2>
+                <span class="close-modal" onclick="closeModal('newAnnouncementModal')">&times;</span>
+            </div>
+            <div class="modal-body">                <form action="process_announcement.php" method="POST" class="modal-form" id="announcementForm" enctype="multipart/form-data">
+                    <!-- Form alerts will be inserted here -->
+                    <div class="form-section">
+                        <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                            <div class="form-group">
+                                <label for="announcement_type">Announcement Type <span class="required">*</span></label>
+                                <select id="announcement_type" name="announcement_type" class="form-control" required
+                                    style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; margin-top: 0.5rem;">
+                                    <option value="">Select Type</option>
+                                    <option value="general">General</option>
+                                    <option value="academic">Academic</option>
+                                    <option value="event">Event</option>
+                                    <option value="reminder">Reminder</option>
+                                    <option value="urgent">Urgent</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="target_audience">Target Audience <span class="required">*</span></label>
+                                <select id="target_audience" name="target_audience" class="form-control" required
+                                    style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; margin-top: 0.5rem;">
+                                    <option value="">Select Audience</option>
+                                    <option value="all">All Parents</option>
+                                    <option value="class">Specific Class</option>
+                                    <option value="department">Specific Department</option>
+                                    <option value="individual">Individual Parents</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="targetSelectionContainer" class="form-group" style="display: none; margin-top: 1rem; margin-bottom: 1.5rem;"></div>
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function() {
+                                const targetAudience = document.getElementById('target_audience');
+                                const targetContainer = document.getElementById('targetSelectionContainer');
+
+                                targetAudience.addEventListener('change', function() {
+                                    let html = '';
+                                    switch(this.value) {
+                                        case 'class':
+                                            html = `
+                                                <label for="class_selection">Select Class(es) <span class="required">*</span></label>
+                                                <select id="class_selection" name="class_ids[]" class="form-control" multiple required
+                                                    style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; margin-top: 0.5rem;">
+                                                    <?php 
+                                                    try {
+                                                        $stmt = $conn->prepare("SELECT id, class_name FROM classes WHERE school_id = ? ORDER BY class_name");
+                                                        $stmt->bind_param('i', $school_id);
+                                                        $stmt->execute();
+                                                        $result = $stmt->get_result();
+                                                        while($row = $result->fetch_assoc()) {
+                                                            echo '<option value="'.$row['id'].'">'.htmlspecialchars($row['class_name']).'</option>';
+                                                        }
+                                                    } catch(Exception $e) {
+                                                        error_log("Error fetching classes: " . $e->getMessage());
+                                                    }
+                                                    ?>
+                                                </select>
+                                                <small style="color: #666; margin-top: 0.25rem; display: block;">Hold Ctrl/Cmd to select multiple classes</small>
+                                            `;
+                                            break;
+                                        case 'department':
+                                            html = `
+                                                <label for="department_selection">Select Department(s) <span class="required">*</span></label>
+                                                <select id="department_selection" name="department_ids[]" class="form-control" multiple required
+                                                    style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; margin-top: 0.5rem;">
+                                                    <?php 
+                                                    try {
+                                                        $stmt = $conn->prepare("SELECT dep_id, department_name FROM departments WHERE school_id = ? ORDER BY department_name");
+                                                        $stmt->bind_param('i', $school_id);
+                                                        $stmt->execute();
+                                                        $result = $stmt->get_result();
+                                                        while($row = $result->fetch_assoc()) {
+                                                            echo '<option value="'.$row['dep_id'].'">'.htmlspecialchars($row['department_name']).'</option>';
+                                                        }
+                                                    } catch(Exception $e) {
+                                                        error_log("Error fetching departments: " . $e->getMessage());
+                                                    }
+                                                    ?>
+                                                </select>
+                                                <small style="color: #666; margin-top: 0.25rem; display: block;">Hold Ctrl/Cmd to select multiple departments</small>
+                                            `;
+                                            break;
+                                        case 'individual':
+                                            html = `
+                                                <label for="parent_selection">Select Parent(s) <span class="required">*</span></label>
+                                                <select id="parent_selection" name="parent_ids[]" class="form-control" multiple required
+                                                    style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; margin-top: 0.5rem;">
+                                                    <?php 
+                                                    try {                                        $stmt = $conn->prepare("SELECT id, CONCAT(first_name, ' ', last_name) as name FROM parents WHERE school_id = ? ORDER BY first_name, last_name");
+                                        $stmt->bind_param('i', $school_id);
+                                        $stmt->execute();
+                                        $result = $stmt->get_result();
+                                        while($row = $result->fetch_assoc()) {
+                                            echo '<option value="'.$row['id'].'">'.htmlspecialchars($row['name']).'</option>';
+                                                        }
+                                                    } catch(Exception $e) {
+                                                        error_log("Error fetching parents: " . $e->getMessage());
+                                                    }
+                                                    ?>
+                                                </select>
+                                                <small style="color: #666; margin-top: 0.25rem; display: block;">Hold Ctrl/Cmd to select multiple parents</small>
+                                            `;
+                                            break;
+                                        default:
+                                            html = '';
+                                    }
+                                    targetContainer.innerHTML = html;
+                                    targetContainer.style.display = html ? 'block' : 'none';
+                                });
+                            });
+                        </script>
+
+                        <div class="form-group" style="margin-bottom: 1.5rem;">
+                            <label for="announcement_title">Announcement Title <span class="required">*</span></label>
+                            <input type="text" id="announcement_title" name="announcement_title" class="form-control" required
+                                style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; margin-top: 0.5rem;">
+                        </div>
+                        
+                        <div class="form-group" style="margin-bottom: 1.5rem;">
+                            <label for="announcement_text">Announcement Content <span class="required">*</span></label>
+                            <textarea id="announcement_text" name="announcement_text" class="form-control" rows="5" required
+                                style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; margin-top: 0.5rem;"></textarea>
+                        </div>
+                          <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                            <div class="form-group">
+                                <label for="target_group">Target Group <span class="required">*</span></label>
+                                <select id="target_group" name="target_group" class="form-control" required
+                                    style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; margin-top: 0.5rem;">
+                                    <option value="">Select Target Group</option>
+                                    <option value="all">All</option>
+                                    <option value="students">Students Only</option>
+                                    <option value="teachers">Teachers Only</option>
+                                    <option value="parents">Parents Only</option>
+                                    <option value="staff">Staff Only</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="category">Category <span class="required">*</span></label>
+                                <select id="category" name="category" class="form-control" required
+                                    style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; margin-top: 0.5rem;">
+                                    <option value="">Select Category</option>
+                                    <option value="general">General</option>
+                                    <option value="academic">Academic</option>
+                                    <option value="event">Event</option>
+                                    <option value="exam">Examination</option>
+                                    <option value="sports">Sports</option>
+                                    <option value="emergency">Emergency</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="publish_date">Publish Date</label>
+                                <input type="date" id="publish_date" name="publish_date" class="form-control" 
+                                    value="<?php echo date('Y-m-d'); ?>" min="<?php echo date('Y-m-d'); ?>"
+                                    style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; margin-top: 0.5rem;">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="expiry_date">Expiry Date</label>
+                                <input type="date" id="expiry_date" name="expiry_date" class="form-control"
+                                    min="<?php echo date('Y-m-d'); ?>"
+                                    style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; margin-top: 0.5rem;">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="priority">Priority</label>
+                                <select id="priority" name="priority" class="form-control"
+                                    style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; margin-top: 0.5rem;">
+                                    <option value="low">Low</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="high">High</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="attachment">Attachment</label>
+                                <input type="file" id="attachment" name="attachment" class="form-control"
+                                    style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; margin-top: 0.5rem;"
+                                    accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png">
+                                <small style="color: #666; margin-top: 0.25rem; display: block;">
+                                    Allowed files: PDF, DOC, DOCX, XLS, XLSX, JPG, JPEG, PNG (Max size: 5MB)
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions" style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem;">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('newAnnouncementModal')" style="padding: 0.8rem 1.5rem;">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary" style="padding: 0.8rem 1.5rem; background: linear-gradient(135deg, var(--primary-color), #2563eb);">
+                            <i class="fas fa-paper-plane"></i> Publish Announcement
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
-    <script>
-    function closeModal(modalId) {
-        document.getElementById(modalId).style.display = 'none';
-        document.body.style.overflow = 'auto'; // Restore scrolling
-    }
-    
-    // Function to open modal
-    function openModal(modalId) {
-        document.getElementById(modalId).style.display = 'block';
-        document.body.style.overflow = 'hidden'; // Prevent scrolling behind modal
-    }
-
-// Handle update/delete for departments and classes
-document.addEventListener('DOMContentLoaded', function() {
-    // Confirmation dialog for Teacher form
-    document.getElementById('teacherForm').addEventListener('submit', function(event) {
-        event.preventDefault();
-        if (confirm('Are you sure you want to add this teacher?')) {
-            this.submit();
-        }
-    });
-    
-    // Confirmation dialog for Class form
-    document.getElementById('classForm').addEventListener('submit', function(event) {
-        event.preventDefault();
-        if (confirm('Are you sure you want to add this class?')) {
-            this.submit();
-        }
-    });
-    
-    // Confirmation dialog for Department form
-    document.getElementById('departmentForm').addEventListener('submit', function(event) {
-        event.preventDefault();
-        if (confirm('Are you sure you want to add this department?')) {
-            this.submit();
-        }
-    });
-    
-    // Close modal when clicking outside of it
-    window.onclick = function(event) {
-        if (event.target.classList.contains('modal')) {
-            event.target.style.display = 'none';
-            document.body.style.overflow = 'auto';
-        }
-    }
-    
-    // Close modal with Escape key
-    document.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape') {
-            const modals = document.getElementsByClassName('modal');
-            for (let i = 0; i < modals.length; i++) {
-                if (modals[i].style.display === 'block') {
-                    modals[i].style.display = 'none';
-                    document.body.style.overflow = 'auto';
-                }
-            }
-        }
-    });
-    // Department Delete
-    document.querySelectorAll('.delete-department-btn').forEach(function(btn) {
-        btn.addEventListener('click', function(e) {
-            if (confirm('Are you sure you want to delete this department?')) {
-                window.location.href = 'delete_department.php?id=' + btn.dataset.id;
-            }
-        });
-    });
-
-    // Department Edit
-    document.querySelectorAll('.edit-department-btn').forEach(function(btn) {
-        btn.addEventListener('click', function(e) {
-            // You can open a modal or redirect to edit page
-            window.location.href = 'edit_department.php?id=' + btn.dataset.id;
-        });
-    });
-
-    // Class Delete
-    document.querySelectorAll('.delete-class-btn').forEach(function(btn) {
-        btn.addEventListener('click', function(e) {
-            if (confirm('Are you sure you want to delete this class?')) {
-                window.location.href = 'delete_class.php?id=' + btn.dataset.id;
-            }
-        });
-    });
-
-    // Class Edit
-    document.querySelectorAll('.edit-class-btn').forEach(function(btn) {
-        btn.addEventListener('click', function(e) {
-            // You can open a modal or redirect to edit page
-            window.location.href = 'edit_class.php?id=' + btn.dataset.id;
-        });
-    });
-});
-</script>
+    <!-- Logout Confirmation Modal -->
+    <div id="logoutConfirmModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-sign-out-alt"></i> Confirm Logout</h2>
+                <span class="close-modal" onclick="closeModal('logoutConfirmModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to logout?</p>
+                <div class="form-actions" style="margin-top: 1.5rem;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('logoutConfirmModal')">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="window.location.href='../logout.php'">
+                        <i class="fas fa-check"></i> Yes, Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Custom JS -->
     <script src="js/modal-handler.js"></script>
     <script src="js/enhanced-features.js"></script>
     <script src="js/search.js"></script>
-    <script src="js/multi-step-form.js"></script>
-    
+    <script src="js/multi-step-form.js"></script>    
+    <!-- Include logout modal -->
+    <?php require_once '../includes/logout_modal.php'; ?>
+
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // No need for duplicate event listeners since we're using onclick attributes
-        // The openModal function is already defined in modal-handler.js
-        
-        // Initialize any other dashboard-specific functionality here
-    });
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle announcement form submission
+            const announcementForm = document.getElementById('announcementForm');
+            if (announcementForm) {                announcementForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    // Remove any existing alerts
+                    const existingAlerts = announcementForm.querySelectorAll('.alert');
+                    existingAlerts.forEach(alert => alert.remove());
+                    
+                    const formData = new FormData(this);
+                    
+                    // Disable submit button and show loading state
+                    const submitBtn = announcementForm.querySelector('button[type="submit"]');
+                    const originalBtnText = submitBtn.innerHTML;
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publishing...';
+                    
+                    fetch('process_announcement.php', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(result => {
+                        // Create alert message
+                        const alert = document.createElement('div');
+                        alert.className = result.success ? 'alert alert-success' : 'alert alert-danger';
+                        alert.innerHTML = `<i class="fas fa-${result.success ? 'check-circle' : 'exclamation-circle'}"></i> ${result.message || (result.success ? 'Announcement published successfully' : 'Failed to publish announcement')}`;
+                        
+                        // Insert alert at the top of the form
+                        announcementForm.insertBefore(alert, announcementForm.firstChild);
+                        
+                        if (result.success) {
+                            // Clear form fields but keep the modal open
+                            announcementForm.reset();
+                            
+                            // Set today's date as default for publish date
+                            const publishDate = document.getElementById('publish_date');
+                            if (publishDate) {
+                                publishDate.value = new Date().toISOString().split('T')[0];
+                            }
+                        }
+                        
+                        // Remove alert after 5 seconds
+                        setTimeout(() => {
+                            alert.remove();
+                        }, 5000);
+                    })
+                    .catch(error => {
+                        // Show error message
+                        const errorAlert = document.createElement('div');
+                        errorAlert.className = 'alert alert-danger';
+                        errorAlert.innerHTML = '<i class="fas fa-exclamation-circle"></i> Failed to publish announcement. Please try again.';
+                        
+                        // Insert alert at the top of the form
+                        announcementForm.insertBefore(errorAlert, announcementForm.firstChild);
+                        
+                        // Remove error message after 5 seconds
+                        setTimeout(() => {
+                            errorAlert.remove();
+                        }, 5000);
+                    })
+                    .finally(() => {
+                        // Re-enable submit button and restore original text
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalBtnText;
+                    });
+                });
+            }
+
+            // Handle logout confirmation
+            const logoutLinks = document.querySelectorAll('.logout-link, a[href="../logout.php"]');
+            logoutLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    document.getElementById('logoutConfirmModal').style.display = 'block';
+                    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+                });
+            });
+
+            // Function to open modal with fade effect
+            window.openModal = function(modalId) {
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    modal.style.display = 'block';
+                    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+                    setTimeout(() => modal.style.opacity = '1', 10);
+                }
+            };
+
+            // Function to close modal with fade effect
+            window.closeModal = function(modalId) {
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    modal.style.opacity = '0';
+                    setTimeout(() => {
+                        modal.style.display = 'none';
+                        document.body.style.overflow = ''; // Restore scrolling
+                    }, 300);
+                }
+            };
+
+            // Function to handle logout
+            window.handleLogout = function() {
+                closeModal('logoutConfirmModal');
+                window.location.href = '../logout.php';
+            };
+
+            // Close modal when clicking outside
+            window.addEventListener('click', function(e) {
+                if (e.target.classList.contains('modal')) {
+                    closeModal(e.target.id);
+                }
+            });
+
+            // Handle escape key to close modal
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    const visibleModal = document.querySelector('.modal[style*="display: block"]');
+                    if (visibleModal) {
+                        closeModal(visibleModal.id);
+                    }
+                }
+            });
+        });
     </script>
 </body>
 </html>

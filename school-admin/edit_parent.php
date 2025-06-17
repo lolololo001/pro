@@ -37,13 +37,16 @@ $conn = getDbConnection();
 // Process form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Validate form data
-    $name = trim($_POST['name'] ?? '');
+    $first_name = trim($_POST['first_name'] ?? '');
+    $last_name = trim($_POST['last_name'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $phone = trim($_POST['phone'] ?? '');
     $address = trim($_POST['address'] ?? '');
     
-    if (empty($name)) {
-        $error = 'Parent name is required.';
+    if (empty($first_name)) {
+        $error = 'First name is required.';
+    } elseif (empty($last_name)) {
+        $error = 'Last name is required.';
     } elseif (empty($email)) {
         $error = 'Email address is required.';
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -60,8 +63,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = 'Another parent with this email already exists.';
             } else {
                 // Update parent information
-                $stmt = $conn->prepare('UPDATE parents SET name = ?, email = ?, phone = ?, address = ? WHERE id = ? AND school_id = ?');
-                $stmt->bind_param('ssssii', $name, $email, $phone, $address, $parent_id, $school_id);
+                $stmt = $conn->prepare('UPDATE parents SET first_name = ?, last_name = ?, email = ?, phone = ?, address = ? WHERE id = ? AND school_id = ?');
+                $stmt->bind_param('sssssii', $first_name, $last_name, $email, $phone, $address, $parent_id, $school_id);
                 
                 if ($stmt->execute()) {
                     $_SESSION['parent_success'] = 'Parent information has been updated successfully.';
@@ -259,8 +262,13 @@ $conn->close();
             <h2>Edit Parent Information</h2>
             <form action="edit_parent.php?id=<?php echo $parent_id; ?>" method="post">
                 <div class="form-group">
-                    <label for="name">Full Name</label>
-                    <input type="text" id="name" name="name" class="form-control" value="<?php echo htmlspecialchars($parent['name'] ?? ''); ?>" required>
+                    <label for="first_name">First Name</label>
+                    <input type="text" id="first_name" name="first_name" class="form-control" value="<?php echo htmlspecialchars($parent['first_name'] ?? ''); ?>" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="last_name">Last Name</label>
+                    <input type="text" id="last_name" name="last_name" class="form-control" value="<?php echo htmlspecialchars($parent['last_name'] ?? ''); ?>" required>
                 </div>
                 
                 <div class="form-group">

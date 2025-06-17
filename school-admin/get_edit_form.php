@@ -456,9 +456,14 @@ function getParentForm($conn, $id, $school_id) {
     <form id="editForm" class="modal-form">
         <div class="form-grid">
             <div class="form-group">
-                <label for="name">Full Name*</label>
-                <input type="text" id="name" name="name" class="form-control" 
-                       value="<?php echo htmlspecialchars($parent['name']); ?>" required>
+                <label for="first_name">First Name*</label>
+                <input type="text" id="first_name" name="first_name" class="form-control" 
+                       value="<?php echo htmlspecialchars($parent['first_name']); ?>" required>
+            </div>
+            <div class="form-group">
+                <label for="last_name">Last Name*</label>
+                <input type="text" id="last_name" name="last_name" class="form-control" 
+                       value="<?php echo htmlspecialchars($parent['last_name']); ?>" required>
             </div>
             <div class="form-group">
                 <label for="email">Email*</label>

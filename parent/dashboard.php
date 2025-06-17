@@ -2,8 +2,8 @@
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
-// Parent Dashboard - Request Permission Feature
 require_once '../config/config.php';
+require_once '../includes/email_helper_new.php';
 
 session_start();
 if (!isset($_SESSION['parent_id'])) {
@@ -16,77 +16,191 @@ $parentId = $_SESSION['parent_id'];
 $parentName = isset($_SESSION['parent_name']) ? $_SESSION['parent_name'] : 'Parent User';
 $parentEmail = isset($_SESSION['parent_email']) ? $_SESSION['parent_email'] : '';
 
-
-$parentId = $_SESSION['parent_id'];
+// Initialize variables
 $error = '';
 $success = '';
+$feedbackError = '';
+$feedbackSuccess = '';
+$children = [];
+$requests = []; // Initialize requests array
+
+// Handle feedback submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_feedback'])) {
+    $feedbackText = trim($_POST['message'] ?? '');
+    $feedbackType = trim($_POST['feedback_type'] ?? '');
+    $subject = trim($_POST['subject'] ?? '');
+    
+    if (empty($feedbackText)) {
+        $feedbackError = 'Please enter your feedback.';
+    } elseif (empty($feedbackType)) {
+        $feedbackError = 'Please select a feedback type.';
+    } elseif (empty($subject)) {
+        $feedbackError = 'Please enter a subject for your feedback.';
+    } else {
+        $conn = null;
+        $stmt = null;
+        
+        try {
+            $conn = getDbConnection();
+            
+            // First, get the parent's email if not in session
+            if (empty($parentEmail)) {
+                $parentStmt = $conn->prepare("SELECT email, CONCAT(first_name, ' ', last_name) as full_name FROM parents WHERE id = ?");
+                $parentStmt->bind_param('i', $parentId);
+                $parentStmt->execute();
+                $parentResult = $parentStmt->get_result();
+                if ($parentRow = $parentResult->fetch_assoc()) {
+                    $parentEmail = $parentRow['email'];
+                    $parentName = $parentRow['full_name'];
+                }
+                $parentStmt->close();
+            }
+            
+            if (empty($parentEmail)) {
+                throw new Exception('Parent email not found in the system.');
+            }
+            
+            $conn->begin_transaction();
+
+            // Get the school_id
+            $schoolQuery = "SELECT s.school_id 
+                          FROM students s 
+                          INNER JOIN student_parent sp ON s.id = sp.student_id 
+                          WHERE sp.parent_id = ? 
+                          LIMIT 1";
+            
+            $stmt = $conn->prepare($schoolQuery);
+            if (!$stmt) {
+                throw new Exception('Failed to prepare school query: ' . $conn->error);
+            }
+            
+            $stmt->bind_param('i', $parentId);
+            if (!$stmt->execute()) {
+                throw new Exception('Failed to get school info: ' . $stmt->error);
+            }
+            
+            $result = $stmt->get_result();
+            if ($result->num_rows === 0) {
+                throw new Exception('No school found for this parent.');
+            }
+            
+            $schoolData = $result->fetch_assoc();
+            $schoolId = $schoolData['school_id'];
+            $stmt->close();
+            
+            // Insert the feedback
+            $insertSQL = "INSERT INTO parent_feedback (parent_id, message, school_id, feedback_type, subject) 
+                         VALUES (?, ?, ?, ?, ?)";
+            $stmt = $conn->prepare($insertSQL);
+            if (!$stmt) {
+                throw new Exception('Failed to prepare feedback insert: ' . $conn->error);
+            }
+            
+            $stmt->bind_param('isiss', $parentId, $feedbackText, $schoolId, $feedbackType, $subject);
+            if (!$stmt->execute()) {
+                throw new Exception('Failed to submit feedback: ' . $stmt->error);
+            }
+            
+            // Send email notification using improved email helper
+            $emailResult = sendFeedbackConfirmationEmail(
+                $parentEmail,
+                $parentName,
+                $feedbackType,
+                $subject,
+                $feedbackText
+            );
+            
+            if ($emailResult['success']) {
+                $conn->commit();
+                $feedbackSuccess = 'Thank you! Your feedback has been submitted successfully. A confirmation email has been sent to ' . $parentEmail;
+            } else {
+                error_log('Failed to send email: ' . $emailResult['message']);
+                $conn->commit();
+                $feedbackSuccess = 'Your feedback has been submitted successfully. However, we could not send the confirmation email. Please check your email address.';
+            }
+        } catch (Exception $e) {
+            if (isset($conn)) {
+                $conn->rollback();
+            }
+            $feedbackError = 'Failed to submit feedback: ' . $e->getMessage();
+            error_log('Feedback submission error: ' . $e->getMessage());
+        } finally {
+            if (isset($stmt)) {
+                $stmt->close();
+            }
+            if (isset($conn)) {
+                $conn->close();
+            }
+        }
+    }
+}
+  
+
+// Children data is now fetched in the later section
 
 // Handle permission request submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['permission_request'])) {
-    $request_text = trim($_POST['request_text']);
+    $request_text = trim($_POST['request_text'] ?? '');
+    
     if (empty($request_text)) {
         $error = 'Please enter your permission request.';
     } else {
         try {
             $conn = getDbConnection();
             
-            // Check if permission_requests table exists with the expected structure
+            // Check if permission_requests table exists
             $tableCheckResult = $conn->query("SHOW TABLES LIKE 'permission_requests'");
             
             if ($tableCheckResult && $tableCheckResult->num_rows > 0) {
-                // Check if students and student_parent tables exist
-                $studentTableCheck = $conn->query("SHOW TABLES LIKE 'students'");
-                $studentParentTableCheck = $conn->query("SHOW TABLES LIKE 'student_parent'");
+                // Table exists, get student info
+                $studentStmt = $conn->prepare("SELECT s.id, s.school_id 
+                                             FROM students s 
+                                             JOIN student_parent sp ON s.id = sp.student_id 
+                                             WHERE sp.parent_id = ? 
+                                             LIMIT 1");
                 
-                if ($studentTableCheck && $studentTableCheck->num_rows > 0 && 
-                    $studentParentTableCheck && $studentParentTableCheck->num_rows > 0) {
-                    // Get the first student associated with this parent (for demo purposes)
-                    // In a real app, you would have the student selected by the parent
-                    $studentStmt = $conn->prepare('SELECT s.id FROM students s 
-                                                  JOIN student_parent sp ON s.id = sp.student_id 
-                                                  WHERE sp.parent_id = ? LIMIT 1');
-                    if (!$studentStmt) {
-                        throw new Exception("Failed to prepare student query: " . $conn->error);
-                    }
-                
-                    $studentStmt->bind_param('i', $parentId);
-                    $studentStmt->execute();
-                    $studentResult = $studentStmt->get_result();
-                    
-                    if ($studentResult->num_rows > 0) {
-                        $studentRow = $studentResult->fetch_assoc();
-                        $studentId = $studentRow['id'];
-                    
-                        // Current date for start/end date defaults
-                        $currentDate = date('Y-m-d H:i:s');
-                        $tomorrowDate = date('Y-m-d H:i:s', strtotime('+1 day'));
-                        
-                        // Insert into permission_requests with required fields
-                        $stmt = $conn->prepare('INSERT INTO permission_requests 
-                                              (student_id, parent_id, request_type, start_date, end_date, reason, status, created_at) 
-                                              VALUES (?, ?, "other", ?, ?, ?, "pending", NOW())');
-                        
-                        if (!$stmt) {
-                            throw new Exception("Failed to prepare insert query: " . $conn->error);
-                        }
-                        
-                        $stmt->bind_param('iisss', $studentId, $parentId, $currentDate, $tomorrowDate, $request_text);
-                        
-                        if ($stmt->execute()) {
-                            $success = 'Your permission request has been submitted.';
-                        } else {
-                            $error = 'Failed to submit your request: ' . $stmt->error;
-                        }
-                        $stmt->close();
-                    } else {
-                        $error = 'No student associated with your account. Please contact the school administrator.';
-                    }
-                    $studentStmt->close();
-                } else {
-                    // No student or student_parent tables, use simplified approach
+                if (!$studentStmt) {
+                    throw new Exception("Failed to prepare student query: " . $conn->error);
                 }
+                
+                $studentStmt->bind_param('i', $parentId);
+                if (!$studentStmt->execute()) {
+                    throw new Exception("Failed to execute student query: " . $studentStmt->error);
+                }
+                
+                $studentResult = $studentStmt->get_result();
+                if ($studentResult->num_rows > 0) {
+                    $studentRow = $studentResult->fetch_assoc();
+                    $studentId = $studentRow['id'];
+                    
+                    // Insert permission request
+                    $currentDate = date('Y-m-d H:i:s');
+                    $tomorrowDate = date('Y-m-d H:i:s', strtotime('+1 day'));
+                    
+                    $stmt = $conn->prepare("INSERT INTO permission_requests 
+                                          (student_id, parent_id, request_type, start_date, end_date, reason, status) 
+                                          VALUES (?, ?, 'other', ?, ?, ?, 'pending')");
+                    
+                    if (!$stmt) {
+                        throw new Exception("Failed to prepare insert query: " . $conn->error);
+                    }
+                    
+                    $stmt->bind_param('iisss', $studentId, $parentId, $currentDate, $tomorrowDate, $request_text);
+                    
+                    if ($stmt->execute()) {
+                        $success = 'Your permission request has been submitted successfully.';
+                    } else {
+                        throw new Exception("Failed to submit request: " . $stmt->error);
+                    }
+                    
+                    $stmt->close();
+                } else {
+                    $error = 'No student associated with your account. Please contact the school administrator.';
+                }
+                
+                $studentStmt->close();
             } else {
-                // Table doesn't exist - create a simplified version for this demo
+                // Create a simplified table if it doesn't exist
                 $createTableSQL = "CREATE TABLE IF NOT EXISTS permission_requests (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     parent_id INT NOT NULL,
@@ -95,33 +209,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['permission_request'])
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )";
                 
-                try {
-                    if ($conn->query($createTableSQL)) {
-                        // Now insert with the simplified structure
-                        $stmt = $conn->prepare('INSERT INTO permission_requests (parent_id, request_text, status, created_at) VALUES (?, ?, "pending", NOW())');
-                        if (!$stmt) {
-                            throw new Exception("Failed to prepare simplified insert query: " . $conn->error);
-                        }
-                        
-                        $stmt->bind_param('is', $parentId, $request_text);
-                        
-                        if ($stmt->execute()) {
-                            $success = 'Your permission request has been submitted.';
-                        } else {
-                            $error = 'Failed to submit your request: ' . $stmt->error;
-                        }
-                        $stmt->close();
-                    } else {
-                        $error = 'System error: Could not create required database table: ' . $conn->error;
-                    }
-                } catch (Exception $e) {
-                    $error = 'System error during table creation: ' . $e->getMessage();
-                    error_log("Parent dashboard table creation error: " . $e->getMessage());
+                if (!$conn->query($createTableSQL)) {
+                    throw new Exception("Failed to create permission_requests table: " . $conn->error);
                 }
+                
+                // Insert request with simplified structure
+                $stmt = $conn->prepare("INSERT INTO permission_requests (parent_id, request_text) VALUES (?, ?)");
+                
+                if (!$stmt) {
+                    throw new Exception("Failed to prepare insert query: " . $conn->error);
+                }
+                
+                $stmt->bind_param('is', $parentId, $request_text);
+                
+                if ($stmt->execute()) {
+                    $success = 'Your permission request has been submitted successfully.';
+                } else {
+                    throw new Exception("Failed to submit request: " . $stmt->error);
+                }
+                
+                $stmt->close();
             }
-            $conn->close();
         } catch (Exception $e) {
             $error = 'System error: ' . $e->getMessage();
+            error_log("Permission request error: " . $e->getMessage());
+        } finally {
+            if (isset($conn)) {
+                $conn->close();
+            }
         }
     }
 }
@@ -388,6 +503,382 @@ try {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <style>
+                    /* Advanced Modern Form Design */
+                    :root {
+                        --primary: #00704A;
+                        --primary-dark: #006241;
+                        --primary-light: #D4E9D7;
+                        --accent: #FFB342;
+                        --text: #2C3E50;
+                        --text-light: #7F8C8D;
+                        --white: #FFFFFF;
+                        --error: #E74C3C;
+                        --success: #27AE60;
+                    }
+
+                    .feedback-section {
+                        padding: 2rem;
+                        perspective: 1000px;
+                    }
+
+                    .feedback-form {
+                        background: linear-gradient(135deg, var(--white) 0%, #f8faf9 100%);
+                        padding: 3rem;
+                        border-radius: 24px;
+                        box-shadow: 0 20px 60px rgba(0, 112, 74, 0.15),
+                                  0 8px 20px rgba(0, 112, 74, 0.1),
+                                  inset 0 2px 10px rgba(255, 255, 255, 0.5);
+                        border: 1px solid rgba(0, 112, 74, 0.08);
+                        position: relative;
+                        overflow: hidden;
+                        backdrop-filter: blur(10px);
+                        transform: translateZ(0);
+                        max-width: 1000px;
+                        margin: 0 auto;
+                        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                        animation: formAppear 0.6s ease-out forwards;
+                    }
+
+                    @keyframes formAppear {
+                        0% {
+                            opacity: 0;
+                            transform: translateY(30px) rotateX(-10deg);
+                        }
+                        100% {
+                            opacity: 1;
+                            transform: translateY(0) rotateX(0);
+                        }
+                    }
+
+                    .feedback-form:hover {
+                        transform: translateY(-5px);
+                        box-shadow: 0 30px 70px rgba(0, 112, 74, 0.2),
+                                  0 10px 30px rgba(0, 112, 74, 0.15);
+                    }
+
+                    .feedback-header {
+                        text-align: center;
+                        margin-bottom: 3rem;
+                        position: relative;
+                        z-index: 1;
+                    }
+
+                    .feedback-icon {
+                        width: 80px;
+                        height: 80px;
+                        margin: 0 auto 1.5rem;
+                        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        position: relative;
+                        animation: iconFloat 3s ease-in-out infinite;
+                    }
+
+                    @keyframes iconFloat {
+                        0%, 100% { transform: translateY(0); }
+                        50% { transform: translateY(-10px); }
+                    }
+
+                    .feedback-icon i {
+                        font-size: 2.5rem;
+                        color: var(--white);
+                        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                    }
+
+                    .feedback-icon::after {
+                        content: '';
+                        position: absolute;
+                        width: 100%;
+                        height: 100%;
+                        border-radius: 50%;
+                        background: inherit;
+                        filter: blur(10px);
+                        opacity: 0.6;
+                        z-index: -1;
+                    }
+
+                    .feedback-header h3 {
+                        color: var(--primary-dark);
+                        font-size: 2rem;
+                        font-weight: 600;
+                        margin-bottom: 1rem;
+                        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+                    }
+
+                    .feedback-header p {
+                        color: var(--text-light);
+                        font-size: 1.1rem;
+                        line-height: 1.6;
+                        max-width: 600px;
+                        margin: 0 auto;
+                    }
+
+                    .form-grid {
+                        display: grid;
+                        grid-template-columns: repeat(2, 1fr);
+                        gap: 2rem;
+                        margin-bottom: 2rem;
+                    }
+
+                    .form-group {
+                        position: relative;
+                        margin-bottom: 2rem;
+                        transform-style: preserve-3d;
+                    }
+
+                    .form-label {
+                        position: absolute;
+                        top: -10px;
+                        left: 15px;
+                        background: var(--white);
+                        padding: 0 10px;
+                        color: var(--primary);
+                        font-size: 0.9rem;
+                        font-weight: 600;
+                        transform-origin: left;
+                        transition: all 0.3s ease;
+                        z-index: 1;
+                    }
+
+                    .form-label i {
+                        margin-right: 6px;
+                        font-size: 1rem;
+                        color: var(--primary);
+                        transition: all 0.3s ease;
+                    }
+
+                    .form-control {
+                        width: 100%;
+                        padding: 1.2rem;
+                        border: 2px solid rgba(0, 112, 74, 0.1);
+                        border-radius: 12px;
+                        background: rgba(255, 255, 255, 0.8);
+                        font-size: 1rem;
+                        color: var(--text);
+                        transition: all 0.3s ease;
+                        backdrop-filter: blur(4px);
+                    }
+
+                    .form-control:focus {
+                        border-color: var(--primary);
+                        background: var(--white);
+                        box-shadow: 0 0 0 4px rgba(0, 112, 74, 0.1);
+                        outline: none;
+                    }
+
+                    .custom-select {
+                        appearance: none;
+                        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2300704A'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+                        background-repeat: no-repeat;
+                        background-position: right 1rem center;
+                        background-size: 1.5rem;
+                        padding-right: 3rem;
+                        cursor: pointer;
+                    }
+
+                    .form-text {
+                        margin-top: 0.5rem;
+                        font-size: 0.85rem;
+                        color: var(--text-light);
+                        display: flex;
+                        align-items: center;
+                        gap: 0.5rem;
+                        opacity: 0.8;
+                        transition: opacity 0.3s ease;
+                    }
+
+                    .form-group:hover .form-text {
+                        opacity: 1;
+                    }
+
+                    .submit-btn {
+                        position: relative;
+                        background: linear-gradient(45deg, var(--primary) 0%, var(--primary-dark) 100%);
+                        border: none;
+                        padding: 1.2rem 3rem;
+                        font-size: 1.1rem;
+                        font-weight: 600;
+                        color: var(--white);
+                        border-radius: 12px;
+                        cursor: pointer;
+                        overflow: hidden;
+                        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                        box-shadow: 0 4px 15px rgba(0, 112, 74, 0.2);
+                        width: auto;
+                        margin: 2rem auto 0;
+                        display: block;
+                    }
+
+                    .submit-btn:hover {
+                        transform: translateY(-2px) scale(1.02);
+                        box-shadow: 0 8px 25px rgba(0, 112, 74, 0.3);
+                    }
+
+                    .submit-btn:active {
+                        transform: translateY(1px) scale(0.98);
+                    }
+
+                    .submit-btn i {
+                        margin-right: 10px;
+                        font-size: 1.2rem;
+                        vertical-align: middle;
+                        transform: translateY(-1px);
+                        transition: transform 0.3s ease;
+                    }
+
+                    .submit-btn:hover i {
+                        transform: translateY(-1px) translateX(3px);
+                    }
+
+                    .btn-hover-effect {
+                        position: absolute;
+                        top: -50%;
+                        left: -25%;
+                        width: 150%;
+                        height: 200%;
+                        background: linear-gradient(
+                            90deg,
+                            transparent,
+                            rgba(255, 255, 255, 0.2),
+                            transparent
+                        );
+                        transform: skewX(-25deg);
+                        animation: shine 6s infinite;
+                    }
+
+                    @keyframes shine {
+                        0% { left: -25%; opacity: 0; }
+                        25% { opacity: 1; }
+                        50% { left: 125%; opacity: 0; }
+                        100% { left: 125%; opacity: 0; }
+                    }
+
+                    /* Advanced Textarea Styling */
+                    textarea.form-control {
+                        min-height: 180px;
+                        line-height: 1.6;
+                        resize: vertical;
+                        background-image: linear-gradient(transparent, transparent calc(1.6em - 1px), #e0e0e0 0);
+                        background-size: 100% 1.6em;
+                        background-position-y: 1px;
+                    }
+
+                    /* Custom Scrollbar */
+                    .form-control::-webkit-scrollbar {
+                        width: 8px;
+                    }
+
+                    .form-control::-webkit-scrollbar-track {
+                        background: rgba(0, 112, 74, 0.05);
+                        border-radius: 4px;
+                    }
+
+                    .form-control::-webkit-scrollbar-thumb {
+                        background: var(--primary);
+                        border-radius: 4px;
+                        transition: all 0.3s ease;
+                    }
+
+                    .form-control::-webkit-scrollbar-thumb:hover {
+                        background: var(--primary-dark);
+                    }
+
+                    /* Success Message Animation */
+                    .alert {
+                        border-radius: 12px;
+                        padding: 1.2rem;
+                        margin-bottom: 2rem;
+                        position: relative;
+                        overflow: hidden;
+                        animation: slideIn 0.5s ease-out forwards;
+                    }
+
+                    .alert-success {
+                        background: rgba(39, 174, 96, 0.1);
+                        border-left: 4px solid var(--success);
+                        color: var(--success);
+                    }
+
+                    .alert-error {
+                        background: rgba(231, 76, 60, 0.1);
+                        border-left: 4px solid var(--error);
+                        color: var(--error);
+                    }
+
+                    @keyframes slideIn {
+                        0% {
+                            opacity: 0;
+                            transform: translateY(-20px);
+                        }
+                        100% {
+                            opacity: 1;
+                            transform: translateY(0);
+                        }
+                    }
+
+                    /* Responsive Design */
+                    @media (max-width: 768px) {
+                        .feedback-form {
+                            padding: 2rem;
+                            margin: 1rem;
+                        }
+
+                        .form-grid {
+                            grid-template-columns: 1fr;
+                            gap: 1rem;
+                        }
+
+                        .feedback-icon {
+                            width: 60px;
+                            height: 60px;
+                        }
+
+                        .feedback-header h3 {
+                            font-size: 1.5rem;
+                        }
+
+                        .submit-btn {
+                            width: 100%;
+                            padding: 1rem 2rem;
+                        }
+                    }
+
+                    /* Loading State */
+                    .submit-btn.loading {
+                        position: relative;
+                        pointer-events: none;
+                    }
+
+                    .submit-btn.loading::after {
+                        content: '';
+                        position: absolute;
+                        width: 20px;
+                        height: 20px;
+                        border: 2px solid transparent;
+                        border-top-color: var(--white);
+                        border-radius: 50%;
+                        animation: spin 0.8s linear infinite;
+                        right: 1.5rem;
+                        top: calc(50% - 10px);
+                    }
+
+                    @keyframes spin {
+                        to { transform: rotate(360deg); }
+                    }
+
+                    /* Field Focus Effect */
+                    .form-group.focused .form-label {
+                        transform: translateY(-5px) scale(0.95);
+                        color: var(--primary-dark);
+                    }
+
+                    .form-group.focused .form-label i {
+                        transform: scale(1.1);
+                    }
+                </style>
 </head>
 <body>
     <!-- Sidebar Navigation -->
@@ -443,7 +934,7 @@ try {
             
             <div class="menu-item">
                 <i class="fas fa-sign-out-alt"></i>
-                <a href="../logout.php">Logout</a>
+                <a href="#" class="logout-link">Logout</a>
             </div>
         </div>
     </div>
@@ -672,8 +1163,7 @@ try {
                 </div>
             </div>
         </div>
-        
-        <!-- Academic Progress Section -->
+          <!-- Academic Progress Section -->
         <div class="card" id="academics">
             <div class="card-header">
                 <h2><i class="fas fa-chart-line"></i> Academic Progress</h2>
@@ -682,6 +1172,171 @@ try {
                 <div class="alert alert-info">
                     <p>Academic progress information will be available soon. Please check back later.</p>
                 </div>
+            </div>
+        </div>
+
+        <!-- Feedback Section -->
+        <div class="card" id="feedback">
+            <div class="card-header">
+                <h2><i class="fas fa-comment"></i> Provide Feedback</h2>
+            </div>
+            <div class="card-body">
+                <?php if ($feedbackSuccess): ?>
+                    <div class="alert alert-success">
+                        <?php echo htmlspecialchars($feedbackSuccess); ?>
+                    </div>
+                <?php endif; ?>
+                
+                <?php if ($feedbackError): ?>
+                    <div class="alert alert-danger">
+                        <?php echo htmlspecialchars($feedbackError); ?>
+                    </div>
+                <?php endif; ?>                <!-- Feedback Form -->
+                <div class="feedback-section">
+                    <form method="POST" class="feedback-form" id="feedbackForm">
+                        <div class="feedback-header">
+                            <div class="feedback-icon">
+                                <i class="fas fa-comments"></i>
+                            </div>
+                            <h3>Share Your Valuable Feedback</h3>
+                            <p>Your insights help us create a better educational experience. We value your thoughts and suggestions!</p>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <input type="text" class="form-control" id="subject" name="subject" 
+                                       placeholder=" " required>
+                                <label for="subject" class="form-label">
+                                    <i class="fas fa-heading"></i>
+                                    Subject
+                                </label>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle"></i>
+                                    Brief title for your feedback
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <select class="form-control custom-select" id="feedback_type" 
+                                        name="feedback_type" required>
+                                    <option value="" disabled selected>Select category</option>
+                                    <option value="Academic">📚 Academic Experience</option>
+                                    <option value="Administrative">🏢 Administrative Services</option>
+                                    <option value="Facility">🏫 School Facilities</option>
+                                    <option value="Teacher">👩‍🏫 Teaching Staff</option>
+                                    <option value="Safety">🛡️ Safety & Security</option>
+                                    <option value="Communication">💬 School Communication</option>
+                                    <option value="Suggestion">💡 Suggestions</option>
+                                    <option value="Other">✨ Other Feedback</option>
+                                </select>
+                                <label for="feedback_type" class="form-label">
+                                    <i class="fas fa-tag"></i>
+                                    Feedback Category
+                                </label>
+                                <div class="form-text">
+                                    <i class="fas fa-filter"></i>
+                                    Choose the most relevant category
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <textarea class="form-control" id="message" name="message" 
+                                    placeholder=" " required></textarea>
+                            <label for="message" class="form-label">
+                                <i class="fas fa-pen-fancy"></i>
+                                Your Message
+                            </label>
+                            <div class="form-text">
+                                <i class="fas fa-heart"></i>
+                                Share your thoughts, experiences, or suggestions in detail
+                            </div>
+                        </div>
+
+                        <button type="submit" name="submit_feedback" class="submit-btn" id="submitButton">
+                            <i class="fas fa-paper-plane"></i>
+                            Submit Feedback
+                            <span class="btn-hover-effect"></span>
+                        </button>
+                    </form>
+                </div>
+
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const form = document.getElementById('feedbackForm');
+                        const formGroups = document.querySelectorAll('.form-group');
+                        const submitBtn = document.getElementById('submitButton');
+
+                        // Animated form appearance
+                        formGroups.forEach((group, index) => {
+                            setTimeout(() => {
+                                group.style.opacity = '1';
+                                group.style.transform = 'translateY(0)';
+                            }, 100 * (index + 1));
+                        });
+
+                        // Form field interactions
+                        formGroups.forEach(group => {
+                            const input = group.querySelector('.form-control');
+                            if (input) {
+                                // Initial check for pre-filled fields
+                                if (input.value) {
+                                    group.classList.add('focused');
+                                }
+
+                                // Focus events
+                                input.addEventListener('focus', () => {
+                                    group.classList.add('focused');
+                                });
+
+                                input.addEventListener('blur', () => {
+                                    if (!input.value) {
+                                        group.classList.remove('focused');
+                                    }
+                                });
+
+                                // Input validation
+                                input.addEventListener('input', () => {
+                                    if (input.value) {
+                                        group.classList.add('has-value');
+                                    } else {
+                                        group.classList.remove('has-value');
+                                    }
+                                });
+                            }
+                        });
+
+                        // Form submission handling
+                        form.addEventListener('submit', function(e) {
+                            const btn = this.querySelector('button[type="submit"]');
+                            btn.classList.add('loading');
+                            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Submitting...';
+                        });
+
+                        // Character counter for textarea
+                        const messageTextarea = document.getElementById('message');
+                        const messageGroup = messageTextarea.closest('.form-group');
+                        const charCounter = document.createElement('div');
+                        charCounter.className = 'char-counter';
+                        messageGroup.appendChild(charCounter);
+
+                        messageTextarea.addEventListener('input', function() {
+                            const remaining = 1000 - this.value.length;
+                            charCounter.textContent = `${remaining} characters remaining`;
+                            charCounter.style.color = remaining < 100 ? '#e74c3c' : '#7f8c8d';
+                        });
+
+                        // Custom select styling
+                        const select = document.querySelector('.custom-select');
+                        select.addEventListener('change', function() {
+                            if (this.value) {
+                                this.classList.add('selected');
+                            } else {
+                                this.classList.remove('selected');
+                            }
+                        });
+                    });
+                </script>
             </div>
         </div>
     </div>
@@ -742,6 +1397,43 @@ try {
                     e.target.style.display = 'none';
                 }
             });
+        });
+    </script>
+
+    <!-- Logout Modal -->
+    <div id="logoutConfirmModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-sign-out-alt"></i> Confirm Logout</h2>
+                <span class="close-modal" onclick="closeModal('logoutConfirmModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to logout?</p>
+                <div class="form-actions" style="margin-top: 1.5rem;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('logoutConfirmModal')">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="window.location.href='../logout.php'">
+                        <i class="fas fa-check"></i> Yes, Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {            const logoutLinks = document.querySelectorAll('.logout-link, a[href="../logout.php"]');
+            logoutLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    document.getElementById('logoutConfirmModal').style.display = 'block';
+                });
+            });
+
+            // Function to close modals
+            window.closeModal = function(modalId) {
+                document.getElementById(modalId).style.display = 'none';
+            };
         });
     </script>
 </body>

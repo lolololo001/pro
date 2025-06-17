@@ -750,10 +750,10 @@ function updateParentRow(row, formData) {
 
     // Update name
     const nameCell = cells[1] || cells[0];
-    if (nameCell && formData.get('name')) {
+    if (nameCell) {
         const nameElement = nameCell.querySelector('.parent-name, .name');
-        if (nameElement) {
-            nameElement.textContent = formData.get('name');
+        if (nameElement && formData.get('first_name') && formData.get('last_name')) {
+            nameElement.textContent = `${formData.get('first_name')} ${formData.get('last_name')}`;
         }
     }
 

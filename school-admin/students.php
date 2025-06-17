@@ -63,24 +63,7 @@ if ($result->num_rows == 0) {
     )");
 }
 
-// Handle delete action
-if (isset($_GET['action']) && $_GET['action'] == 'delete' && isset($_GET['id'])) {
-    $student_id = intval($_GET['id']);
-    
-    // Delete the student
-    $stmt = $conn->prepare("DELETE FROM students WHERE id = ? AND school_id = ?");
-    $stmt->bind_param('ii', $student_id, $school_id);
-    
-    if ($stmt->execute()) {
-        $_SESSION['student_success'] = 'Student deleted successfully!';
-    } else {
-        $_SESSION['student_error'] = 'Failed to delete student: ' . $conn->error;
-    }
-    
-    $stmt->close();
-    header('Location: students.php');
-    exit;
-}
+
 
 // Check if department_id column exists in students table
 $department_column_exists = false;

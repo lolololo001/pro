@@ -29,13 +29,20 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 // Validate form data
-$name = trim($_POST['name'] ?? '');
+$first_name = trim($_POST['first_name'] ?? '');
+$last_name = trim($_POST['last_name'] ?? '');
 $email = trim($_POST['email'] ?? '');
 $phone = trim($_POST['phone'] ?? '');
 $address = trim($_POST['address'] ?? '');
 
-if (empty($name)) {
-    $_SESSION['parent_error'] = 'Parent name is required.';
+if (empty($first_name)) {
+    $_SESSION['parent_error'] = 'First name is required.';
+    header('Location: parents.php');
+    exit;
+}
+
+if (empty($last_name)) {
+    $_SESSION['parent_error'] = 'Last name is required.';
     header('Location: parents.php');
     exit;
 }
@@ -77,8 +84,8 @@ try {
 
 // Insert new parent
 try {
-    $stmt = $conn->prepare('INSERT INTO parents (school_id, name, email, phone, address) VALUES (?, ?, ?, ?, ?)');
-    $stmt->bind_param('issss', $school_id, $name, $email, $phone, $address);
+    $stmt = $conn->prepare('INSERT INTO parents (school_id, first_name, last_name, email, phone, address) VALUES (?, ?, ?, ?, ?, ?)');
+    $stmt->bind_param('isssss', $school_id, $first_name, $last_name, $email, $phone, $address);
     
     if ($stmt->execute()) {
         $_SESSION['parent_success'] = 'Parent has been added successfully.';

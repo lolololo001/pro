@@ -6,8 +6,9 @@ session_start();
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// Load config
+// Load config and email helper
 require_once '../config/config.php';
+require_once '../includes/email_helper.php';
 
 // Check if school admin is logged in
 if (!isset($_SESSION['school_admin_id'])) {
@@ -186,7 +187,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $student_id = $stmt->insert_id;
             error_log("Student added successfully with ID: " . $student_id . " and registration number: " . $reg_number);
             
-            $_SESSION['student_success'] = 'Student added successfully with registration number: ' . $reg_number;
+            // Get class name for email
+            $class_name = '';
+            if ($class_id) {
+                $class_query = "SELECT name FROM classes WHERE id = ?";
+                $class_stmt = $conn->prepare($class_query);
+                $class_stmt->bind_param('i', $class_id);
+                $class_stmt->execute();
+                $class_result = $class_stmt->get_result();
+                if ($class_row = $class_result->fetch_assoc()) {
+                    $class_name = $class_row['name'];
+                }
+                $class_stmt->close();
+            }
+
+            // Get department name for email
+            $department_name = '';
+            if ($department_id) {
+                $dept_query = "SELECT name FROM departments WHERE dep_id = ?";
+                $dept_stmt = $conn->prepare($dept_query);
+                $dept_stmt->bind_param('i', $department_id);
+                $dept_stmt->execute();
+                $dept_result = $dept_stmt->get_result();
+                if ($dept_row = $dept_result->fetch_assoc()) {
+                    $department_name = $dept_row['name'];
+                }
+                $dept_stmt->close();
+            }
+
+            // Get school information for email
+            $school_query = "SELECT name, email, phone FROM schools WHERE id = ?";
+            $school_stmt = $conn->prepare($school_query);
+            $school_stmt->bind_param('i', $school_id);
+            $school_stmt->execute();
+            $school_result = $school_stmt->get_result();
+            $school_info = $school_result->fetch_assoc();
+            $school_stmt->close();
+
+            // Prepare student data for email
+            $student_data = [
+                'first_name' => $first_name,
+                'last_name' => $last_name,
+                'reg_number' => $reg_number,
+                'class_name' => $class_name,
+                'department_name' => $department_name
+            ];
+
+            // Send registration email if parent email is provided
+            if (!empty($parent_email)) {
+                $email_sent = sendStudentRegistrationEmail($parent_email, $parent_name, $student_data, $school_info);
+                if ($email_sent) {
+                    $_SESSION['student_success'] .= ' Registration confirmation email sent.';
+                } else {
+                    $_SESSION['student_success'] .= ' However, failed to send registration email.';
+                }
+            }
             
             // Set response for AJAX requests
             $response['success'] = true;

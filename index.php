@@ -1,4 +1,4 @@
- <?php
+<?php
 // Initialize the application
 require_once 'config/config.php';
 
@@ -126,48 +126,258 @@ if (isset($_GET['search']) && !empty($_GET['search'])) {
         
         .register-btn:hover {
             background-color: var(--footer-color);
+        }        /* Hero Section Styles */        .hero {
+            color: var(--light-color);
+            padding: 0;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            min-height: 70vh;
+            display: flex;
+            align-items: center;
+            background: #009260;
         }
-        
-        /* Hero Section Styles */
-        .hero {
-            background: linear-gradient(rgba(0, 112, 74, 0.8), rgba(0, 112, 74, 0.9)), url('assets/images/school-bg.jpg');
+
+        .hero-slider {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             background-size: cover;
             background-position: center;
-            color: var(--light-color);
-            padding: 5rem 0;
-            text-align: center;
+            opacity: 0;
+            transform: scale(1.1);
+            transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        
-        .hero h1 {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
+
+        .slide.active {
+            opacity: 1;
+            transform: scale(1);
         }
-        
-        .hero p {
-            font-size: 1.2rem;
-            max-width: 800px;
-            margin: 0 auto 2rem;
+
+        .hero-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;            background: linear-gradient(135deg, 
+                rgba(0, 146, 96, 0.85) 0%,
+                rgba(0, 146, 96, 0.75) 50%,
+                rgba(0, 146, 96, 0.65) 100%
+            );
+            z-index: 2;
         }
-        
-        .search-container {
-            max-width: 600px;
+
+        .slider-nav {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+            position: relative;
+            z-index: 3;
+        }
+
+        .nav-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid var(--footer-color);
+            background: transparent;
+            padding: 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-dot::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            background: var(--footer-color);
+            transform: translate(-50%, -50%) scale(0);
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+        }
+
+        .nav-dot.active::after {
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        @keyframes kenBurns {
+            0% {
+                transform: scale(1);
+            }
+            100% {
+                transform: scale(1.1);
+            }
+        }        .hero-content {
+            position: relative;
+            z-index: 3;
+            max-width: 1000px;
             margin: 0 auto;
+            padding: 1.5rem;
+            background: rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .hero-text-container {
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .welcome-text {
+            font-size: 1.5rem;
+            font-weight: 300;
+            margin-bottom: 0.5rem;
+            opacity: 0.9;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            animation: fadeInDown 1s ease;
+            color: var(--footer-color);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .welcome-text::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 2px;
+            background: var(--footer-color);
+            box-shadow: 0 0 10px var(--footer-color);
+        }
+
+        .hero-title {            font-size: 4rem;
+            font-weight: 800;
+            margin: 1rem 0;
+            background: linear-gradient(135deg, #ffffff 30%, var(--footer-color) 70%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: fadeInUp 1s ease 0.2s both;
+            text-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            letter-spacing: -1px;
+            position: relative;
+            display: inline-block;
+        }
+
+        .hero-title::before,
+        .hero-title::after {
+            content: '';
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border: 2px solid var(--footer-color);
+            opacity: 0.5;
+        }
+
+        .hero-title::before {
+            top: -10px;
+            left: -20px;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .hero-title::after {
+            bottom: -10px;
+            right: -20px;
+            border-left: none;
+            border-top: none;
+        }
+
+        .hero-subtitle {
+            font-size: 2.2rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            color: #ffffff;
+            animation: fadeInUp 1s ease 0.4s both;
+            letter-spacing: -0.5px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 2;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+          .search-container {
+            max-width: 700px;
+            margin: 0 auto;
+            animation: fadeInUp 1s ease 0.6s both;
         }
         
         .search-form {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 100px;
+            padding: 0.5rem;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .search-wrapper {
             display: flex;
+            align-items: center;
             background-color: var(--light-color);
             border-radius: 50px;
-            overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            padding: 0.5rem 1rem;
+            transition: transform 0.3s ease;
+        }
+
+        .search-wrapper:focus-within {
+            transform: translateY(-2px);
+        }
+
+        .search-icon {
+            color: var(--primary-color);
+            font-size: 1.2rem;
+            margin-right: 1rem;
         }
         
         .search-input {
             flex: 1;
-            padding: 1rem 1.5rem;
+            padding: 0.8rem 1rem;
             border: none;
-            font-size: 1rem;
+            font-size: 1.1rem;
             font-family: 'Poppins', sans-serif;
+            background: transparent;
         }
         
         .search-input:focus {
@@ -175,18 +385,31 @@ if (isset($_GET['search']) && !empty($_GET['search'])) {
         }
         
         .search-btn {
-            background-color: var(--accent-color);
+            background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
             color: var(--light-color);
             border: none;
-            padding: 1rem 1.5rem;
+            padding: 1rem 2rem;
             cursor: pointer;
             font-size: 1rem;
             font-weight: 500;
-            transition: background-color 0.3s;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
         }
         
         .search-btn:hover {
-            background-color: var(--primary-color);
+            transform: translateX(5px);
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+        }
+
+        .search-btn i {
+            transition: transform 0.3s ease;
+        }
+
+        .search-btn:hover i {
+            transform: translateX(3px);
         }
         
         /* Search Results Styles */
@@ -290,36 +513,89 @@ if (isset($_GET['search']) && !empty($_GET['search'])) {
             max-width: 700px;
             margin: 0 auto;
             color: #666;
-        }
-        
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }        .features-grid {
+            display: flex;
             gap: 2rem;
+            padding: 1rem;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+            margin: 0 auto;
         }
-        
+
+        .features-grid::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+        }
+
         .feature-card {
             text-align: center;
             padding: 2rem;
             background-color: var(--light-color);
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s;
+            transition: all 0.3s ease;
+            flex: 0 0 300px;
+            scroll-snap-align: start;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--footer-color));
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
         }
         
         .feature-card:hover {
             transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
         }
-        
-        .feature-icon {
+
+        .feature-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .features {
+            overflow: hidden;
+        }
+          .feature-icon {
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            border-radius: 50%;
             font-size: 2.5rem;
             color: var(--primary-color);
-            margin-bottom: 1rem;
+            background: linear-gradient(135deg, rgba(0, 112, 74, 0.1), rgba(248, 195, 1, 0.1));
+            transition: all 0.3s ease;
+        }
+        
+        .feature-card:hover .feature-icon {
+            transform: scale(1.1);
+            color: var(--footer-color);
+            background: linear-gradient(135deg, rgba(0, 112, 74, 0.15), rgba(248, 195, 1, 0.15));
         }
         
         .feature-card h3 {
             margin-bottom: 1rem;
             color: var(--primary-color);
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
+        .feature-card p {
+            color: #666;
+            font-size: 0.95rem;
+            line-height: 1.6;
         }
         
         /* Call to Action Styles */
@@ -523,17 +799,37 @@ if (isset($_GET['search']) && !empty($_GET['search'])) {
             </div>
         </div>
     </header>
-    
-    <!-- Hero Section with Search -->
-    <section class="hero">
-        <div class="container">
-            <h1>Smart Communication System for Secondary Schools</h1>
-            <p>Bridging the gap between schools and parents with real-time updates, fee tracking, and digital permission requests.</p>
+      <!-- Hero Section with Search -->    <section class="hero">
+        <div class="hero-slider">
+            <div class="slide active" style="background-image: url('image/image1.jpg')"></div>
+            <div class="slide" style="background-image: url('image/image5.jpg')"></div>
+            <div class="slide" style="background-image: url('image/image12.jpg')"></div>
+        </div>
+        <div class="hero-overlay"></div>
+        <div class="container hero-content">
+            <div class="hero-text-container">
+                <div class="welcome-text" data-aos="fade-down">Welcome to</div>
+                <h1 class="hero-title" data-aos="fade-up"><?php echo APP_NAME; ?></h1>
+                <div class="hero-subtitle" data-aos="fade-up" data-aos-delay="200">
+                    Smart Communication System for Secondary Schools
+                </div>
+                <div class="slider-nav">
+                    <button class="nav-dot active" data-slide="0"></button>
+                    <button class="nav-dot" data-slide="1"></button>
+                    <button class="nav-dot" data-slide="2"></button>
+                </div>
+            </div>
             
-            <div class="search-container">
+            <div class="search-container" data-aos="fade-up" data-aos-delay="600">
                 <form action="index.php" method="GET" class="search-form">
-                    <input type="text" name="search" class="search-input" placeholder="Search for your school..." value="<?php echo htmlspecialchars($searchQuery); ?>" required>
-                    <button type="submit" class="search-btn">Search</button>
+                    <div class="search-wrapper">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" name="search" class="search-input" placeholder="Search for your school..." value="<?php echo htmlspecialchars($searchQuery); ?>" required>
+                        <button type="submit" class="search-btn">
+                            <span>Find School</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -568,16 +864,14 @@ if (isset($_GET['search']) && !empty($_GET['search'])) {
         </div>
     </section>
     <?php endif; ?>
-    
-    <!-- Features Section -->
+      <!-- Features Section -->
     <section class="features" id="features">
-        <div class="container">
+        <div class="container" style="max-width: 1400px;">
             <div class="section-title">
                 <h2>Key Features</h2>
                 <p>Discover how SchoolComm can transform communication between schools and parents</p>
             </div>
-            
-            <div class="features-grid">
+              <div class="features-grid">
                 <div class="feature-card">
                     <div class="feature-icon">
                         <i class="fas fa-comments"></i>
@@ -596,14 +890,6 @@ if (isset($_GET['search']) && !empty($_GET['search'])) {
                 
                 <div class="feature-card">
                     <div class="feature-icon">
-                        <i class="fas fa-money-bill-wave"></i>
-                    </div>
-                    <h3>Fee Balance Checking</h3>
-                    <p>Access real-time financial information and payment history with ease.</p>
-                </div>
-                
-                <div class="feature-card">
-                    <div class="feature-icon">
                         <i class="fas fa-clipboard-check"></i>
                     </div>
                     <h3>Permission Requests</h3>
@@ -616,14 +902,6 @@ if (isset($_GET['search']) && !empty($_GET['search'])) {
                     </div>
                     <h3>Sentiment Analysis</h3>
                     <p>AI-powered analysis of parent feedback for continuous school improvement.</p>
-                </div>
-                
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-bell"></i>
-                    </div>
-                    <h3>Notifications</h3>
-                    <p>Stay updated with important announcements and events through instant notifications.</p>
                 </div>
             </div>
         </div>
@@ -693,5 +971,36 @@ if (isset($_GET['search']) && !empty($_GET['search'])) {
             </div>
         </div>
     </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const slides = document.querySelectorAll('.slide');
+            const dots = document.querySelectorAll('.nav-dot');
+            let currentSlide = 0;
+            const slideInterval = 5000; // Change slide every 5 seconds
+
+            function goToSlide(n) {
+                slides[currentSlide].classList.remove('active');
+                dots[currentSlide].classList.remove('active');
+                currentSlide = (n + slides.length) % slides.length;
+                slides[currentSlide].classList.add('active');
+                dots[currentSlide].classList.add('active');
+            }
+
+            function nextSlide() {
+                goToSlide(currentSlide + 1);
+            }
+
+            // Add click events to dots
+            dots.forEach((dot, index) => {
+                dot.addEventListener('click', () => {
+                    goToSlide(index);
+                });
+            });
+
+            // Start automatic slideshow
+            setInterval(nextSlide, slideInterval);
+        });
+    </script>
 </body>
-</html> 
+</html>

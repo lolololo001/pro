@@ -60,10 +60,13 @@ if (empty($school_info)) {
         <div class="menu-item <?php echo basename($_SERVER['PHP_SELF']) == 'departments.php' ? 'active' : ''; ?>">
             <i class="fas fa-building"></i>
             <a href="departments.php"><span>Departments</span></a>
-        </div>
-        <div class="menu-item <?php echo basename($_SERVER['PHP_SELF']) == 'parents.php' ? 'active' : ''; ?>">
+        </div>        <div class="menu-item <?php echo basename($_SERVER['PHP_SELF']) == 'parents.php' ? 'active' : ''; ?>">
             <i class="fas fa-users"></i>
             <a href="parents.php"><span>Parents</span></a>
+        </div>
+        <div class="menu-item <?php echo basename($_SERVER['PHP_SELF']) == 'parent_feedback.php' ? 'active' : ''; ?>">
+            <i class="fas fa-comment-dots"></i>
+            <a href="parent_feedback.php"><span>Parent Feedback</span></a>
         </div>
         <div class="menu-item <?php echo basename($_SERVER['PHP_SELF']) == 'permissions.php' ? 'active' : ''; ?>">
             <i class="fas fa-clipboard-check"></i>
@@ -88,10 +91,9 @@ if (empty($school_info)) {
         <div class="menu-item <?php echo basename($_SERVER['PHP_SELF']) == 'settings.php' ? 'active' : ''; ?>">
             <i class="fas fa-cog"></i>
             <a href="settings.php"><span>Settings</span></a>
-        </div>
-        <div class="menu-item">
+        </div>        <div class="menu-item">
             <i class="fas fa-sign-out-alt"></i>
-            <a href="../logout.php" class="logout-link"><span>Logout</span></a>
+            <a href="#" class="logout-link" onclick="document.getElementById('logoutConfirmModal').style.display='block'"><span>Logout</span></a>
         </div>
     </div>
 </aside>

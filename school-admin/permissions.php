@@ -206,11 +206,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_id'])) {
             if ($stmt->affected_rows === 0) {
                 throw new Exception('Request not found or already processed');
             }
-            
-            // Get request details for notification
+              // Get request details for notification
             $stmt = $conn->prepare("
-                SELECT pr.*, s.email as student_email, s.name as student_name,
-                       p.email as parent_email, p.first_name as parent_first_name,
+                SELECT pr.*, 
+                       s.first_name as student_first_name, 
+                       s.last_name as student_last_name,
+                       CONCAT(s.first_name, ' ', s.last_name) as student_name,
+                       s.reg_number,
+                       p.email as parent_email, 
+                       p.first_name as parent_first_name,
                        p.last_name as parent_last_name,
                        sc.name as school_name
                 FROM permission_requests pr
@@ -271,7 +275,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_id'])) {
                             </div>" : "") . "
                             <p>Request Details:</p>
                             <ul style='background: #f9f9f9; padding: 15px;'>
-                                <li><strong>Student:</strong> {$request['student_name']}</li>
+                                <li><strong>Student:</strong> {$request['student_name']}" . 
+                                    ($request['reg_number'] ? " (ID: " . $request['reg_number'] . ")" : "") . "</li>
                                 <li><strong>Request Date:</strong> " . date('F j, Y', strtotime($request['created_at'])) . "</li>
                                 <li><strong>Status:</strong> <span style='color: {$actionColor};'>{$statusText}</span></li>
                             </ul>

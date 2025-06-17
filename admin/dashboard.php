@@ -389,6 +389,127 @@ $conn->close();
             color: var(--light-color);
         }
         
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1050;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            width: 90%;
+            max-width: 400px;
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                transform: translate(-50%, -60%);
+                opacity: 0;
+            }
+            to {
+                transform: translate(-50%, -50%);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            background: var(--primary-color);
+            padding: 1.2rem 1.5rem;
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            color: white;
+            margin: 0;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .close-modal {
+            color: white;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+
+        .close-modal:hover {
+            opacity: 1;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-body p {
+            text-align: center;
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+            color: #333;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+        
         /* Responsive Styles */
         @media (max-width: 992px) {
             .sidebar {
@@ -461,10 +582,9 @@ $conn->close();
             <div class="menu-item">
                 <i class="fas fa-user-cog"></i>
                 <a href="profile.php"><span>My Profile</span></a>
-            </div>
-            <div class="menu-item">
+            </div>            <div class="menu-item">
                 <i class="fas fa-sign-out-alt"></i>
-                <a href="../logout.php" class="logout-link"><span>Logout</span></a>
+                <a href="#" class="logout-link"><span>Logout</span></a>
             </div>
         </div>
     </aside>
@@ -572,111 +692,50 @@ $conn->close();
             </div>
         </div>
     <?php require_once '../includes/footer_includes.php'; ?>
-    
-    <!-- Logout Confirmation Modal Styles -->
-    <style>
-        /* Modal Styles */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1050;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0, 0, 0, 0.5);
-        }
-        
-        .modal-content {
-            background-color: var(--light-color);
-            margin: 10% auto;
-            padding: 0;
-            border-radius: 8px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            position: relative;
-            max-width: 600px;
-            width: 90%;
-            animation: modalFadeIn 0.3s;
-        }
-        
-        @keyframes modalFadeIn {
-            from {opacity: 0; transform: translateY(-20px);}
-            to {opacity: 1; transform: translateY(0);}
-        }
-        
-        .modal-header {
-            padding: 1.2rem 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .modal-header h2 {
-            font-size: 1.2rem;
-            color: var(--primary-color);
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .close-modal {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #999;
-            cursor: pointer;
-            transition: color 0.3s;
-        }
-        
-        .close-modal:hover {
-            color: var(--primary-color);
-        }
-        
-        .modal-body {
-            padding: 1.5rem;
-        }
-        
-        .form-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-        
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s;
-            border: none;
-            font-size: 0.9rem;
-        }
-        
-        .btn-primary {
-            background-color: var(--primary-color);
-            color: var(--light-color);
-        }
-        
-        .btn-secondary {
-            background-color: #e0e0e0;
-            color: #333;
-        }
-        
-        .btn-primary:hover {
-            background-color: var(--accent-color);
-        }
-        
-        .btn-secondary:hover {
-            background-color: #d0d0d0;
-        }
-    </style>
-    <?php require_once '../includes/footer_includes.php'; ?>
+      <!-- Logout Modal -->
+    <?php require_once '../includes/logout_modal.php'; ?>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle logout confirmation
+            const logoutLinks = document.querySelectorAll('.logout-link, a[href="../logout.php"]');
+            logoutLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    document.getElementById('logoutConfirmModal').style.display = 'block';
+                    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+                });
+            });
+
+            // Function to close modals
+            window.closeModal = function(modalId) {
+                document.getElementById(modalId).style.display = 'none';
+                document.body.style.overflow = ''; // Restore scrolling
+            };
+
+            // Function to handle logout
+            window.handleLogout = function() {
+                closeModal('logoutConfirmModal');
+                window.location.href = '../logout.php';
+            };
+
+            // Close modal when clicking outside
+            window.addEventListener('click', function(e) {
+                if (e.target.classList.contains('modal')) {
+                    closeModal(e.target.id);
+                }
+            });
+
+            // Handle escape key to close modal
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    const visibleModal = document.querySelector('.modal[style*="display: block"]');
+                    if (visibleModal) {
+                        closeModal(visibleModal.id);
+                    }
+                }
+            });
+        });
+    </script>
 </body>
 </html>

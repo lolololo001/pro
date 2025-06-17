@@ -263,7 +263,8 @@ function updateParent($conn, $parent_id, $school_id, $data) {
         
         // Parent fields
         $fields = [
-            'name' => 's',
+            'first_name' => 's',
+            'last_name' => 's',
             'email' => 's',
             'phone' => 's',
             'address' => 's',

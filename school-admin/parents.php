@@ -49,7 +49,7 @@ if (isset($_GET['test']) && $_GET['test'] == '1') {
                 if ($sample_result && $sample_result->num_rows > 0) {
                     echo "✅ Sample parents:<br>";
                     while ($row = $sample_result->fetch_assoc()) {
-                        echo "&nbsp;&nbsp;- ID: {$row['id']}, Name: {$row['name']}, Email: {$row['email']}<br>";
+                        echo "&nbsp;&nbsp;- ID: {$row['id']}, Name: {$row['first_name']} {$row['last_name']}, Email: {$row['email']}<br>";
                     }
                 } else {
                     echo "❌ No parents found in table<br>";
@@ -79,8 +79,7 @@ if (isset($_GET['test']) && $_GET['test'] == '1') {
                             echo "✅ Total parent-child relationships: $sp_total<br>";
 
                             // Show sample relationships from student_parent table
-                            $sp_relationships = $conn->query("
-                                SELECT p.name as parent_name, p.email as parent_email,
+                            $sp_relationships = $conn->query("                                SELECT CONCAT(p.first_name, ' ', p.last_name) as parent_name, p.email as parent_email,
                                        s.first_name, s.last_name, sp.is_primary
                                 FROM student_parent sp
                                 JOIN parents p ON sp.parent_id = p.id
@@ -173,7 +172,8 @@ try {
         $conn->query("CREATE TABLE IF NOT EXISTS parents (
             id INT AUTO_INCREMENT PRIMARY KEY,
             school_id INT NOT NULL,
-            name VARCHAR(100) NOT NULL,
+            first_name VARCHAR(50) NOT NULL,
+            last_name VARCHAR(50) NOT NULL,
             email VARCHAR(100) NOT NULL,
             phone VARCHAR(20),
             address TEXT,
@@ -267,7 +267,7 @@ $parent_stats = ['total' => 0, 'with_feedback' => 0, 'recent' => 0];
 
 try {
     // First, let's try a simple SELECT * FROM parents to get all parents
-    $simple_query = "SELECT * FROM parents ORDER BY created_at DESC";
+    $simple_query = "SELECT *, CONCAT(first_name, ' ', last_name) as name FROM parents ORDER BY created_at DESC";
     $result = $conn->query($simple_query);
 
     if ($result) {
@@ -443,11 +443,9 @@ try {
                         }
                         if (in_array('grade_level', $available_columns)) {
                             $simple_fields .= ", s.grade_level";
-                        }
-
-                        $children_query = "SELECT $simple_fields FROM students s WHERE s.school_id = ? AND (s.parent_name = ? OR s.parent_email = ? OR s.parent_phone = ?)";
+                        }                        $children_query = "SELECT $simple_fields FROM students s WHERE s.school_id = ? AND (s.parent_name = ? OR s.parent_email = ? OR s.parent_phone = ?)";
                         $stmt = $conn->prepare($children_query);
-                        $parent_name = $parent['name'];
+                        $parent_name = trim($parent['first_name'] . ' ' . $parent['last_name']);
                         $parent_email = $parent['email'];
                         $parent_phone = $parent['phone'] ?? '';
                         $stmt->bind_param('isss', $school_id, $parent_name, $parent_email, $parent_phone);
@@ -587,9 +585,8 @@ try {
                 }
 
                 // Show ALL parent-child relationships
-                foreach ($parents as $p) {
-                    if (!empty($p['children'])) {
-                        echo "Parent: " . $p['name'] . " (" . $p['email'] . ") has " . count($p['children']) . " children:\n";
+                foreach ($parents as $p) {                    if (!empty($p['children'])) {
+                        echo "Parent: " . $p['first_name'] . ' ' . $p['last_name'] . " (" . $p['email'] . ") has " . count($p['children']) . " children:\n";
                         foreach ($p['children'] as $c) {
                             $primary_text = (isset($c['is_primary']) && $c['is_primary']) ? ' (PRIMARY)' : '';
                             $id_text = '';
@@ -603,7 +600,7 @@ try {
                             echo "  - " . $c['first_name'] . " " . $c['last_name'] . $primary_text . $id_text . "\n";
                         }
                     } else {
-                        echo "Parent: " . $p['name'] . " (" . $p['email'] . ") has NO children assigned\n";
+                        echo "Parent: " . $p['first_name'] . ' ' . $p['last_name'] . " (" . $p['email'] . ") has NO children assigned\n";
                     }
                 }
             }
@@ -648,11 +645,10 @@ try {
         if (in_array('feedback_text', $columns) && in_array('parent_id', $columns)) {
             $stmt = $conn->prepare('
                 SELECT
-                    pf.id,
-                    pf.feedback_text,
+                    pf.id,                    pf.feedback_text,
                     pf.sentiment_label,
                     pf.created_at,
-                    p.name as parent_name,
+                    CONCAT(p.first_name, SPACE(1), p.last_name) as parent_name,
                     p.email as parent_email,
                     p.id as parent_id,
                     fr.reply_message,
@@ -1500,7 +1496,7 @@ $conn->close();
                                     <strong>Debug Info:</strong><br>
                                     Parents loaded: <?php echo count($parents); ?><br>
                                     <?php if (count($parents) > 0): ?>
-                                        First parent: <?php echo htmlspecialchars($parents[0]['name'] ?? 'No name'); ?> (ID: <?php echo $parents[0]['id'] ?? 'No ID'; ?>)<br>
+                                        First parent: <?php echo htmlspecialchars(($parents[0]['first_name'] ?? '') . ' ' . ($parents[0]['last_name'] ?? '') ?: 'No name'); ?> (ID: <?php echo $parents[0]['id'] ?? 'No ID'; ?>)<br>
                                     <?php endif; ?>
                                 </div>
                             <?php endif; ?>
@@ -1695,17 +1691,15 @@ $conn->close();
                                                 <td>
                                                     <div class="action-btns">
                                                         <a href="javascript:void(0)"
-                                                           class="btn-icon edit"
-                                                           title="Edit <?php echo htmlspecialchars($parent['name']); ?>"
+                                                           class="btn-icon edit"                                                           title="Edit <?php echo htmlspecialchars($parent['first_name'] . ' ' . $parent['last_name']); ?>"
                                                            data-id="<?php echo $parent['id']; ?>"
                                                            data-type="parent"
-                                                           data-name="<?php echo htmlspecialchars($parent['name']); ?>"
+                                                           data-name="<?php echo htmlspecialchars($parent['first_name'] . ' ' . $parent['last_name']); ?>"
                                                            data-modal="true">
                                                             <i class="fas fa-edit"></i>
                                                         </a>
                                                         <a href="javascript:void(0)"
-                                                           class="btn-icon delete"
-                                                           title="Delete <?php echo htmlspecialchars($parent['name']); ?>"
+                                                           class="btn-icon delete"                                                           title="Delete <?php echo htmlspecialchars($parent['first_name'] . ' ' . $parent['last_name']); ?>"
                                                            data-id="<?php echo $parent['id']; ?>"
                                                            data-type="parent"
                                                            data-name="<?php echo htmlspecialchars($parent['name']); ?>">
@@ -1858,7 +1852,7 @@ $conn->close();
     <!-- Add Parent Modal -->
     <div id="addParentModal" class="modal">
         <div class="modal-content" style="max-width: 600px; border-radius: 12px; overflow: hidden;">
-            <div class="modal-header" style="background: linear-gradient(135deg, #00704a, #2563eb); color: white; padding: 1.5rem 2rem; display: flex; justify-content: space-between; align-items: center;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #00704a, #2563eb); color: white; padding: 1.5rem  2rem; display: flex; justify-content: space-between; align-items: center;">
                 <h2 style="margin: 0; display: flex; align-items: center; gap: 0.5rem; font-size: 1.25rem;"><i class="fas fa-user-plus"></i> Add New Parent</h2>
                 <span class="close-modal" onclick="closeModal('addParentModal')" style="color: white; font-size: 1.5rem; cursor: pointer; background: none; border: none;">&times;</span>
             </div>
@@ -1880,10 +1874,17 @@ $conn->close();
                         </div>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
                             <div style="margin-bottom: 1rem;">
-                                <label for="parent_name" style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: #333;">
-                                    Full Name <span style="color: #dc3545;">*</span>
+                                <label for="parent_first_name" style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: #333;">
+                                    First Name <span style="color: #dc3545;">*</span>
                                 </label>
-                                <input type="text" id="parent_name" name="name" class="form-control"
+                                <input type="text" id="parent_first_name" name="first_name" class="form-control"
+                                       style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.95rem;" required>
+                            </div>
+                            <div style="margin-bottom: 1rem;">
+                                <label for="parent_last_name" style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: #333;">
+                                    Last Name <span style="color: #dc3545;">*</span>
+                                </label>
+                                <input type="text" id="parent_last_name" name="last_name" class="form-control"
                                        style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.95rem;" required>
                             </div>
                             <div style="margin-bottom: 1rem;">

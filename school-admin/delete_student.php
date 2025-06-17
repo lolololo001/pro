@@ -57,36 +57,27 @@ try {
     $conn->begin_transaction();
     
     try {
-        // Delete related records first (dependent tables)
-        // Delete from student_status_logs
-        $log_stmt = $conn->prepare("DELETE FROM student_status_logs WHERE student_id = ?");
-        $log_stmt->bind_param('i', $student_id);
-        $log_stmt->execute();
-        $log_stmt->close();
-        
-        // Delete from student_parent if exists
-        $parent_stmt = $conn->prepare("DELETE FROM student_parent WHERE student_id = ?");
-        $parent_stmt->bind_param('i', $student_id);
-        $parent_stmt->execute();
-        $parent_stmt->close();
-        
-        // Finally delete the student
-        $stmt = $conn->prepare("DELETE FROM students WHERE id = ? AND school_id = ?");
-        $stmt->bind_param('ii', $student_id, $school_id);
-        
-        if ($stmt->execute()) {
-            // Commit transaction
-            $conn->commit();
+
+        /// Handle delete action
+if (isset($_GET['action']) && $_GET['action'] == 'delete' && isset($_GET['id'])) {
+    $student_id = intval($_GET['id']);
+    
+    // Delete the student
+    $stmt = $conn->prepare("DELETE FROM students WHERE student=$id");
+    $stmt->bind_param('ii', $student_id, $school_id);
+    
+    if ($stmt->execute()) {
+        $_SESSION['student_success'] = 'Student deleted successfully!';
+    } else {
+        $_SESSION['student_error'] = 'Failed to delete student: ' . $conn->error;
+    }
+    
+    $stmt->close();
+    header('Location: students.php');
+    exit;
+}
             
-            header('Content-Type: application/json');
-            echo json_encode([
-                'success' => true,
-                'message' => 'Student deleted successfully',
-                'data' => [
-                    'student_id' => $student_id
-                ]
-            ]);
-        } else {
+         else {
             // Rollback on failure
             $conn->rollback();
             header('Content-Type: application/json');
