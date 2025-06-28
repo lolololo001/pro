@@ -80,8 +80,8 @@ $stmt->close();
             </div>
             
             <form id="modalStudentForm" action="add_student.php" method="post">
-                <!-- Ensure redirect to dashboard after successful registration -->
-                <input type="hidden" name="redirect_to" value="dashboard.php">
+                <!-- Ensure redirect to students.php after successful registration -->
+                <input type="hidden" name="redirect_to" value="students.php">
                 
                 <!-- Enhanced Step 1: Student Information -->
                 <div class="form-section enhanced-form-section active" id="modal-step1">

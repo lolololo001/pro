@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_child'])) {
         }
         
         // Determine which fields to use for student identification
-        $id_field = in_array('admission_number', $columns) ? 'admission_number' : 'registration_number';
+        $id_field = in_array('admission_number', $columns) ? 'admission_number' : (in_array('reg_number', $columns) ? 'reg_number' : 'registration_number');
         
         // Check if we have first_name and last_name or just name
         $name_condition = "";

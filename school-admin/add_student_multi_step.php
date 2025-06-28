@@ -303,8 +303,8 @@ $conn->close();
                 </div>
                 
                 <form id="studentForm" action="add_student.php" method="post">
-                    <!-- Ensure redirect to dashboard after successful registration -->
-                    <input type="hidden" name="redirect_to" value="dashboard.php">
+                    <!-- Ensure redirect to students.php after successful registration -->
+                    <input type="hidden" name="redirect_to" value="students.php">
                     <!-- Step 1: Student Information -->
                     <div class="form-section active" id="step1">
                         <h3 class="section-title"><i class="fas fa-user"></i> Student Personal Information</h3>

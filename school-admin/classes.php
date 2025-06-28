@@ -877,17 +877,13 @@ $conn->close();
             const modal = document.getElementById('confirmationModal');
             const message = document.getElementById('confirmationMessage');
             const confirmBtn = document.getElementById('confirmButton');
-            
             message.innerHTML = 'Are you sure you want to update this class information?';
             modal.style.display = 'block';
-            
-            // Set up the confirm button action
             confirmCallback = function() {
                 updateClass(formData);
-            };
-            
-            confirmBtn.onclick = function() {
                 closeConfirmationModal();
+            };
+            confirmBtn.onclick = function() {
                 if (confirmCallback) confirmCallback();
             };
         }
@@ -936,39 +932,74 @@ $conn->close();
             const modal = document.getElementById('confirmationModal');
             const message = document.getElementById('confirmationMessage');
             const confirmBtn = document.getElementById('confirmButton');
-            
             message.innerHTML = 'Are you sure you want to delete this class? This action cannot be undone.';
             modal.style.display = 'block';
-            
-            // Set up the confirm button action
             confirmCallback = function() {
-                // Show loading indicator
-                const loadingIndicator = document.createElement('div');
-                loadingIndicator.className = 'alert alert-info';
-                loadingIndicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting class...';
-                document.querySelector('.main-content').insertBefore(loadingIndicator, document.querySelector('.card'));
-                
-                // Send delete request via fetch instead of redirecting
-                fetch(`classes.php?action=delete&id=${classId}`)
-                    .then(response => {
-                        loadingIndicator.className = 'alert alert-success';
-                        loadingIndicator.innerHTML = '<i class="fas fa-check-circle"></i> Class deleted successfully!';
-                        
-                        // Reload the page after a short delay
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 1000);
-                    })
-                    .catch(error => {
-                        loadingIndicator.className = 'alert alert-danger';
-                        loadingIndicator.innerHTML = `<i class="fas fa-exclamation-circle"></i> Error deleting class: ${error.message}`;
-                    });
+                // AJAX delete
+                const formData = new FormData();
+                formData.append('id', classId);
+                formData.append('type', 'class');
+                fetch('delete_handler.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Remove the class row from the table
+                        const row = document.querySelector(`a.btn-icon.delete[data-id='${classId}']`).closest('tr');
+                        if (row) {
+                            row.style.transition = 'opacity 0.3s';
+                            row.style.opacity = '0';
+                            setTimeout(() => { row.remove(); }, 300);
+                        }
+                        showAlert('success', '<i class="fas fa-check-circle"></i> Class deleted successfully.');
+                    } else {
+                        showAlert('danger', '<i class="fas fa-exclamation-circle"></i> Error: ' + (data.message || 'Failed to delete class'));
+                    }
+                })
+                .catch(() => {
+                    showAlert('danger', '<i class="fas fa-exclamation-circle"></i> An error occurred while deleting the class.');
+                })
+                .finally(() => {
+                    closeConfirmationModal();
+                });
             };
-            
             confirmBtn.onclick = function() {
-                closeConfirmationModal();
                 if (confirmCallback) confirmCallback();
             };
+        // Show alert function (copied from students.php for consistency)
+        function showAlert(type, message) {
+            // Remove any existing alerts
+            const existingAlerts = document.querySelectorAll('.alert-notification');
+            existingAlerts.forEach(alert => alert.remove());
+            // Create new alert
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-notification`;
+            alertDiv.innerHTML = message;
+            alertDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 9999;
+                min-width: 300px;
+                max-width: 500px;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                animation: slideInRight 0.3s ease;
+                background-color: ${type === 'success' ? '#d4edda' : '#f8d7da'};
+                color: ${type === 'success' ? '#155724' : '#721c24'};
+                border: 1px solid ${type === 'success' ? '#c3e6cb' : '#f5c6cb'};
+            `;
+            document.body.appendChild(alertDiv);
+            setTimeout(() => {
+                alertDiv.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => {
+                    if (alertDiv.parentNode) alertDiv.remove();
+                }, 300);
+            }, 5000);
+        }
         }
         
         // Close confirmation modal

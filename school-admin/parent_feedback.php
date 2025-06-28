@@ -19,95 +19,258 @@ if (!$school_id) {
 
 $conn = getDbConnection();
 
+// Function to check if a column exists in a table
+function columnExists($conn, $table, $column) {
+    $result = $conn->query("SHOW COLUMNS FROM `$table` LIKE '$column'");
+    return $result && $result->num_rows > 0;
+}
+
+// Function to safely execute SQL
+function executeSql($conn, $sql, $errorMsg = "") {
+    try {
+        if (!$conn->query($sql)) {
+            throw new Exception($errorMsg . ": " . $conn->error);
+        }
+        return true;
+    } catch (Exception $e) {
+        error_log($e->getMessage());
+        return false;
+    }
+}
+
+// Create necessary tables if they don't exist
+try {
+    // Check if schools table exists
+    $schools_check = $conn->query("SHOW TABLES LIKE 'schools'");
+    if ($schools_check->num_rows === 0) {
+        $create_schools_sql = "CREATE TABLE IF NOT EXISTS schools (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )";
+        executeSql($conn, $create_schools_sql, "Error creating schools table");
+    }
+
+    // Check if parents table exists
+    $parents_check = $conn->query("SHOW TABLES LIKE 'parents'");
+    if ($parents_check->num_rows === 0) {
+        $create_parents_sql = "CREATE TABLE IF NOT EXISTS parents (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            first_name VARCHAR(255) NOT NULL,
+            last_name VARCHAR(255) NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )";
+        executeSql($conn, $create_parents_sql, "Error creating parents table");
+    }
+
+    // Check if parent_feedback table exists
+    $table_check = $conn->query("SHOW TABLES LIKE 'parent_feedback'");
+    if ($table_check->num_rows === 0) {
+        $create_feedback_sql = "CREATE TABLE IF NOT EXISTS parent_feedback (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            parent_id INT NOT NULL,
+            school_id INT NOT NULL,
+            feedback_text TEXT NOT NULL,
+            feedback_type ENUM('Academic', 'Administrative', 'Facility', 'Teacher', 'Safety', 'Communication', 'Other') DEFAULT 'Other',
+            status ENUM('pending', 'in_progress', 'resolved') DEFAULT 'pending',
+            admin_response TEXT,
+            response_date DATETIME,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            sentiment_score DECIMAL(3,2) DEFAULT NULL,
+            sentiment_label ENUM('positive', 'neutral', 'negative') DEFAULT 'neutral',
+            subject VARCHAR(255),
+            FOREIGN KEY (parent_id) REFERENCES parents(id) ON DELETE CASCADE,
+            FOREIGN KEY (school_id) REFERENCES schools(id) ON DELETE CASCADE,
+            INDEX idx_school_status (school_id, status),
+            INDEX idx_created_at (created_at)
+        )";
+        executeSql($conn, $create_feedback_sql, "Error creating parent_feedback table");
+    } else {
+        // Check and add missing columns if needed
+        if (!columnExists($conn, 'parent_feedback', 'sentiment_score')) {
+            executeSql($conn, "ALTER TABLE parent_feedback ADD COLUMN sentiment_score DECIMAL(3,2) DEFAULT NULL", "Error adding sentiment_score column");
+        }
+        if (!columnExists($conn, 'parent_feedback', 'sentiment_label')) {
+            executeSql($conn, "ALTER TABLE parent_feedback ADD COLUMN sentiment_label ENUM('positive', 'neutral', 'negative') DEFAULT 'neutral'", "Error adding sentiment_label column");
+        }
+        if (!columnExists($conn, 'parent_feedback', 'subject')) {
+            executeSql($conn, "ALTER TABLE parent_feedback ADD COLUMN subject VARCHAR(255)", "Error adding subject column");
+        }
+    }
+} catch (Exception $e) {
+    error_log("Database setup error: " . $e->getMessage());
+    // Set a user-friendly error message
+    $_SESSION['error_msg'] = "There was an issue setting up the database. Please contact support if this persists.";
+}
+
 // Handle feedback status updates
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     try {
         if ($_POST['action'] === 'update_status') {
-            $feedback_id = $_POST['feedback_id'];
+            $feedback_id = intval($_POST['feedback_id']);
             $new_status = $_POST['status'];
             $response = $_POST['admin_response'] ?? '';
             
+            // Validate status value
+            $valid_statuses = ['pending', 'in_progress', 'resolved'];
+            if (!in_array($new_status, $valid_statuses)) {
+                throw new Exception("Invalid status value provided.");
+            }
+            
             $stmt = $conn->prepare("UPDATE parent_feedback SET status = ?, admin_response = ?, response_date = NOW() WHERE id = ? AND school_id = ?");
+            if (!$stmt) {
+                throw new Exception("Failed to prepare update statement: " . $conn->error);
+            }
+            
             $stmt->bind_param('ssii', $new_status, $response, $feedback_id, $school_id);
             
             if ($stmt->execute()) {
                 $_SESSION['success_msg'] = "Feedback status updated successfully.";
             } else {
-                throw new Exception("Failed to update feedback status.");
+                throw new Exception("Failed to update feedback status: " . $stmt->error);
             }
         }
     } catch (Exception $e) {
-        $_SESSION['error_msg'] = $e->getMessage();
+        error_log("Error updating feedback: " . $e->getMessage());
+        $_SESSION['error_msg'] = "Failed to update feedback. Please try again.";
     }
     
     header('Location: parent_feedback.php');
     exit;
 }
 
-// Get feedback filters
-$status_filter = $_GET['status'] ?? 'all';
-$type_filter = $_GET['type'] ?? 'all';
-$date_filter = $_GET['date'] ?? 'all';
+// Get and validate feedback filters
+$valid_statuses = ['all', 'pending', 'in_progress', 'resolved'];
+$valid_types = ['all', 'Academic', 'Administrative', 'Facility', 'Teacher', 'Safety', 'Communication', 'Other'];
+$valid_dates = ['all', 'today', 'week', 'month'];
 
-// Build the SQL query with filters
-$sql = "SELECT pf.*, 
-        CONCAT(p.first_name, ' ', p.last_name) as parent_name,
-        p.email as parent_email,
-        DATE_FORMAT(pf.created_at, '%M %d, %Y %h:%i %p') as formatted_date
-        FROM parent_feedback pf
-        JOIN parents p ON pf.parent_id = p.id
-        WHERE pf.school_id = ?";
+$status_filter = in_array($_GET['status'] ?? 'all', $valid_statuses) ? $_GET['status'] : 'all';
+$type_filter = in_array($_GET['type'] ?? 'all', $valid_types) ? $_GET['type'] : 'all';
+$date_filter = in_array($_GET['date'] ?? 'all', $valid_dates) ? $_GET['date'] : 'all';
 
-$params = [$school_id];
-$types = "i";
+// Initialize feedback items as empty array in case of query failure
+$feedback_items = [];
 
-if ($status_filter !== 'all') {
-    $sql .= " AND pf.status = ?";
-    $params[] = $status_filter;
-    $types .= "s";
-}
+try {
+    // Build the SQL query with filters
+    $sql = "SELECT pf.id, pf.parent_id, pf.school_id, pf.feedback_text, 
+            COALESCE(pf.feedback_type, 'Other') as feedback_type,
+            COALESCE(pf.status, 'pending') as status,
+            COALESCE(pf.admin_response, '') as admin_response,
+            pf.response_date,
+            pf.created_at,
+            COALESCE(pf.sentiment_score, 0.00) as sentiment_score,
+            COALESCE(pf.sentiment_label, 'neutral') as sentiment_label,
+            COALESCE(pf.subject, '') as subject,
+            COALESCE(CONCAT(p.first_name, ' ', p.last_name), 'Unknown Parent') as parent_name,
+            COALESCE(p.email, 'No Email') as parent_email,
+            DATE_FORMAT(pf.created_at, '%M %d, %Y %h:%i %p') as formatted_date
+            FROM parent_feedback pf
+            LEFT JOIN parents p ON pf.parent_id = p.id
+            WHERE pf.school_id = ?";
 
-if ($type_filter !== 'all') {
-    $sql .= " AND pf.feedback_type = ?";
-    $params[] = $type_filter;
-    $types .= "s";
-}
+    $params = [$school_id];
+    $types = "i";
 
-if ($date_filter !== 'all') {
-    switch ($date_filter) {
-        case 'today':
-            $sql .= " AND DATE(pf.created_at) = CURDATE()";
-            break;
-        case 'week':
-            $sql .= " AND pf.created_at >= DATE_SUB(NOW(), INTERVAL 1 WEEK)";
-            break;
-        case 'month':
-            $sql .= " AND pf.created_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH)";
-            break;
+    if ($status_filter !== 'all') {
+        $sql .= " AND pf.status = ?";
+        $params[] = $status_filter;
+        $types .= "s";
     }
-}
 
-$sql .= " ORDER BY pf.created_at DESC";
+    if ($type_filter !== 'all') {
+        $sql .= " AND pf.feedback_type = ?";
+        $params[] = $type_filter;
+        $types .= "s";
+    }
 
-$stmt = $conn->prepare($sql);
-$stmt->bind_param($types, ...$params);
-$stmt->execute();
-$result = $stmt->get_result();
-$feedback_items = $result->fetch_all(MYSQLI_ASSOC);
+    if ($date_filter !== 'all') {
+        switch ($date_filter) {
+            case 'today':
+                $sql .= " AND DATE(pf.created_at) = CURDATE()";
+                break;
+            case 'week':
+                $sql .= " AND pf.created_at >= DATE_SUB(NOW(), INTERVAL 1 WEEK)";
+                break;
+            case 'month':
+                $sql .= " AND pf.created_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH)";
+                break;
+        }
+    }
 
-// Get feedback statistics
-$stats_sql = "SELECT 
-    COUNT(*) as total,
-    SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
-    SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as in_progress,
-    SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) as resolved
-    FROM parent_feedback 
-    WHERE school_id = ?";
+    $sql .= " ORDER BY pf.created_at DESC LIMIT 1000"; // Add a reasonable limit
+
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        throw new Exception("Failed to prepare statement: " . $conn->error);
+    }
+
+    $stmt->bind_param($types, ...$params);
     
-$stats_stmt = $conn->prepare($stats_sql);
-$stats_stmt->bind_param('i', $school_id);
-$stats_stmt->execute();
-$stats = $stats_stmt->get_result()->fetch_assoc();
+    if (!$stmt->execute()) {
+        throw new Exception("Failed to execute query: " . $stmt->error);
+    }
+
+    $result = $stmt->get_result();
+    if (!$result) {
+        throw new Exception("Failed to get result: " . $stmt->error);
+    }
+
+    $feedback_items = $result->fetch_all(MYSQLI_ASSOC);
+
+} 
+catch (Exception $e) {
+    error_log("Error fetching feedback: " . $e->getMessage());
+    $_SESSION['error_msg'] = "There was an error loading the feedback. Please try refreshing the page.";
+
+// Initialize statistics with default values
+$stats = [
+    'total' => 0,
+    'pending' => 0,
+    'in_progress' => 0,
+    'resolved' => 0,
+    'positive_sentiment' => 0,
+    'negative_sentiment' => 0
+];
+}
+try {
+    // Get feedback statistics with sentiment analysis
+    $stats_sql = "SELECT 
+        COUNT(*) as total,
+        COALESCE(SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END), 0) as pending,
+        COALESCE(SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END), 0) as in_progress,
+        COALESCE(SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END), 0) as resolved,
+        COALESCE(SUM(CASE WHEN sentiment_label = 'positive' THEN 1 ELSE 0 END), 0) as positive_sentiment,
+        COALESCE(SUM(CASE WHEN sentiment_label = 'negative' THEN 1 ELSE 0 END), 0) as negative_sentiment
+        FROM parent_feedback 
+        WHERE school_id = ?";
+    
+    $stats_stmt = $conn->prepare($stats_sql);
+    if (!$stats_stmt) {
+        throw new Exception("Failed to prepare statistics query: " . $conn->error);
+    }
+
+    $stats_stmt->bind_param('i', $school_id);
+    
+    if (!$stats_stmt->execute()) {
+        throw new Exception("Failed to execute statistics query: " . $stats_stmt->error);
+    }
+
+    $stats_result = $stats_stmt->get_result();
+    if (!$stats_result) {
+        throw new Exception("Failed to get statistics result: " . $stats_stmt->error);
+    }
+
+    $fetched_stats = $stats_result->fetch_assoc();
+    if ($fetched_stats) {
+        $stats = $fetched_stats;
+    }
+
+} catch (Exception $e) {
+    error_log("Error fetching statistics: " . $e->getMessage());
+    // Keep using the default stats values initialized above
+}
 
 ?>
 <!DOCTYPE html>
@@ -531,7 +694,6 @@ $stats = $stats_stmt->get_result()->fetch_assoc();
                         <?php endif; ?>
                     </div>
                 </div>
-            <?php endforeach; ?>
             
             <?php if (empty($feedback_items)): ?>
                 <div class="feedback-card empty-feedback">

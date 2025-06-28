@@ -1,14 +1,18 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 // Start session
 session_start();
-
-// Show all PHP errors
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
 
 // Load config and email helper
 require_once '../config/config.php';
 require_once '../includes/email_helper.php';
+
+// PHPMailer imports
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
 
 // Check if school admin is logged in
 if (!isset($_SESSION['school_admin_id'])) {
@@ -54,14 +58,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if (empty($first_name) || empty($last_name) || empty($parent_name) || empty($parent_phone)) {
         $_SESSION['student_error'] = 'All required fields must be filled.';
-        header('Location: add_student_form.php');
+        header('Location: students.php');
         exit;
     }
     
     // Validate email format if provided
     if (!empty($parent_email) && !filter_var($parent_email, FILTER_VALIDATE_EMAIL)) {
         $_SESSION['student_error'] = 'Please enter a valid parent email address.';
-        header('Location: add_student_form.php');
+        header('Location: students.php');
         exit;
     }
     
@@ -144,6 +148,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         
+        // Check if student already exists (by name and parent phone for this school)
+        $check_sql = "SELECT id, reg_number FROM students WHERE school_id = ? AND first_name = ? AND last_name = ? AND parent_phone = ? LIMIT 1";
+        $check_stmt = $conn->prepare($check_sql);
+        $check_stmt->bind_param('isss', $school_id, $first_name, $last_name, $parent_phone);
+        $check_stmt->execute();
+        $check_result = $check_stmt->get_result();
+        if ($existing = $check_result->fetch_assoc()) {
+            $msg = 'Student already registered with Reg No: ' . htmlspecialchars($existing['reg_number']);
+
+            // Send credentials via Email API if parent email is present and valid
+            if (!empty($parent_email) && filter_var($parent_email, FILTER_VALIDATE_EMAIL)) {
+                try {
+                    $email_api_url = 'https://your-email-api-endpoint.example/send'; // Replace with your Email API URL
+                    $email_payload = [
+                        'to' => $parent_email,
+                        'subject' => 'Student Registration Credentials',
+                        'body' => "Dear $parent_name,\n\nYour child $first_name $last_name is already registered.\nRegistration Number: " . $existing['reg_number'] . "\n\nThank you."
+                        // Add more fields as required by your API
+                    ];
+                    $ch = curl_init($email_api_url);
+                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                    curl_setopt($ch, CURLOPT_POST, true);
+                    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+                    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($email_payload));
+                    $api_response = curl_exec($ch);
+                    if (curl_errno($ch)) {
+                        error_log('Email API send error: ' . curl_error($ch));
+                    } else {
+                        error_log('Email API send response: ' . $api_response);
+                    }
+                    curl_close($ch);
+                } catch (Exception $e) {
+                    error_log('Email API send exception: ' . $e->getMessage());
+                }
+            }
+
+            if ($is_ajax) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => $msg]);
+                exit;
+            } else {
+                $_SESSION['student_error'] = $msg;
+                header('Location: students.php');
+                exit;
+            }
+        }
+        $check_stmt->close();
+        
         // Generate registration number (current year/formatted ID)
         $current_year = date('Y');
         
@@ -162,32 +214,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $reg_number = $current_year . '/' . str_pad($next_id, 3, '0', STR_PAD_LEFT);
         
         // Insert new student with registration number
-        $sql = "INSERT INTO students (school_id, first_name, last_name, department_id, class_id, gender, dob, parent_name, parent_phone, parent_email, address, reg_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"; 
+        $sql = "INSERT INTO students (school_id, first_name, last_name, department_id, class_id, gender, dob, parent_name, parent_phone, parent_email, address, reg_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $conn->prepare($sql);
-        ?>
-        // hano hazajya php mailer
         
-        <?php
+        // Set NULL for department_id, class_id, dob if empty
+        $stmt->bind_param(
+            'issiisssssss',
+            $school_id,
+            $first_name,
+            $last_name,
+            $department_id,
+            $class_id,
+            $gender,
+            $dob,
+            $parent_name,
+            $parent_phone,
+            $parent_email,
+            $address,
+            $reg_number
+        );
+
+        // For nullable INT and DATE, use set to null if empty
+        if ($department_id === null) $stmt->bind_param('issiisssssss', $school_id, $first_name, $last_name, $department_id, $class_id, $gender, $dob, $parent_name, $parent_phone, $parent_email, $address, $reg_number);
+        if ($class_id === null) $stmt->bind_param('issiisssssss', $school_id, $first_name, $last_name, $department_id, $class_id, $gender, $dob, $parent_name, $parent_phone, $parent_email, $address, $reg_number);
+        if ($dob === null) $stmt->bind_param('issiisssssss', $school_id, $first_name, $last_name, $department_id, $class_id, $gender, $dob, $parent_name, $parent_phone, $parent_email, $address, $reg_number);
+
         // Log the SQL query for debugging
         error_log("SQL Query: " . $sql);
         error_log("Before bind_param: " . $conn->error);
-        
-        // Bind parameters - mysqli will handle NULL values correctly
-        $stmt->bind_param('issiisssssss', $school_id, $first_name, $last_name, $department_id, $class_id, $gender, $dob, $parent_name, $parent_phone, $parent_email, $address, $reg_number);
-        
-        // Log any errors after bind_param
-        error_log("After bind_param: " . $stmt->error);
         
         // Execute the statement and log any errors
         $execute_result = $stmt->execute();
         error_log("Execute result: " . ($execute_result ? 'success' : 'failed'));
         
         if ($execute_result) {
-            // Get the inserted student ID
+            // Registration succeeded, now send email (do not block registration if email fails)
             $student_id = $stmt->insert_id;
             error_log("Student added successfully with ID: " . $student_id . " and registration number: " . $reg_number);
-            
-            // Get class name for email
+
+            // Get class name for email/API
             $class_name = '';
             if ($class_id) {
                 $class_query = "SELECT name FROM classes WHERE id = ?";
@@ -201,7 +266,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $class_stmt->close();
             }
 
-            // Get department name for email
+            // Get department name for email/API
             $department_name = '';
             if ($department_id) {
                 $dept_query = "SELECT name FROM departments WHERE dep_id = ?";
@@ -215,7 +280,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $dept_stmt->close();
             }
 
-            // Get school information for email
+            // Get school information for email/API
             $school_query = "SELECT name, email, phone FROM schools WHERE id = ?";
             $school_stmt = $conn->prepare($school_query);
             $school_stmt->bind_param('i', $school_id);
@@ -224,46 +289,87 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $school_info = $school_result->fetch_assoc();
             $school_stmt->close();
 
-            // Prepare student data for email
-            $student_data = [
-                'first_name' => $first_name,
-                'last_name' => $last_name,
-                'reg_number' => $reg_number,
-                'class_name' => $class_name,
-                'department_name' => $department_name
-            ];
-
-            // Send registration email if parent email is provided
-            if (!empty($parent_email)) {
-                $email_sent = sendStudentRegistrationEmail($parent_email, $parent_name, $student_data, $school_info);
-                if ($email_sent) {
-                    $_SESSION['student_success'] .= ' Registration confirmation email sent.';
-                } else {
-                    $_SESSION['student_success'] .= ' However, failed to send registration email.';
+            // Send student credentials via Email API if parent email is provided and valid
+            if (!empty($parent_email) && filter_var($parent_email, FILTER_VALIDATE_EMAIL)) {
+                try {
+                    $email_api_url = 'https://your-email-api-endpoint.example/send'; // Replace with your Email API URL
+                    $email_payload = [
+                        'to' => $parent_email,
+                        'subject' => 'Student Registration Credentials',
+                        'body' => "Dear $parent_name,\n\nYour child $first_name $last_name has been registered.\nRegistration Number: $reg_number\nClass: $class_name\nDepartment: $department_name\n\nThank you for choosing " . ($school_info['name'] ?? 'our school') . "."
+                        // Add more fields as required by your API
+                    ];
+                    $ch = curl_init($email_api_url);
+                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                    curl_setopt($ch, CURLOPT_POST, true);
+                    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+                    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($email_payload));
+                    $api_response = curl_exec($ch);
+                    if (curl_errno($ch)) {
+                        error_log('Email API send error: ' . curl_error($ch));
+                    } else {
+                        error_log('Email API send response: ' . $api_response);
+                    }
+                    curl_close($ch);
+                } catch (Exception $e) {
+                    error_log('Email API send exception: ' . $e->getMessage());
                 }
             }
-            
+
+            // Send message via external API after successful registration
+            try {
+                $api_url = 'https://your-api-endpoint.example/send-message'; // Replace with your API URL
+                $api_payload = [
+                    'parent_name' => $parent_name,
+                    'parent_phone' => $parent_phone,
+                    'parent_email' => $parent_email,
+                    'student_name' => $first_name . ' ' . $last_name,
+                    'reg_number' => $reg_number,
+                    'school_name' => $school_info['name'] ?? '',
+                    'class_name' => $class_name,
+                    'department_name' => $department_name
+                ];
+                $ch = curl_init($api_url);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_POST, true);
+                curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($api_payload));
+                $api_response = curl_exec($ch);
+                if (curl_errno($ch)) {
+                    error_log('API message send error: ' . curl_error($ch));
+                } else {
+                    error_log('API message send response: ' . $api_response);
+                }
+                curl_close($ch);
+            } catch (Exception $e) {
+                error_log('API message send exception: ' . $e->getMessage());
+            }
+
             // Set response for AJAX requests
             $response['success'] = true;
-            $response['message'] = 'Student added successfully';
+            $response['message'] = 'Student added successfully. Reg No: ' . $reg_number;
             $response['reg_number'] = $reg_number;
+
+            // Set session message for redirect
+            $_SESSION['student_success'] = 'Student registered successfully. Reg No: ' . $reg_number;
         } else {
             $error_message = 'Failed to add student: ' . $stmt->error;
             $_SESSION['student_error'] = $error_message;
             error_log("SQL Error: " . $error_message);
-            
+
             // Set response for AJAX requests
             $response['success'] = false;
             $response['message'] = $error_message;
         }
-        
+
         $stmt->close();
         $conn->close();
-        
+
     } catch (Exception $e) {
         $_SESSION['student_error'] = 'System error: ' . $e->getMessage();
+        error_log('Exception: ' . $e->getMessage());
     }
-    
+
     // If this is an AJAX request, return JSON response
     if ($is_ajax) {
         header('Content-Type: application/json');
@@ -277,6 +383,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 } else {
     // Not a POST request, redirect to student form
-    header('Location: add_student_form.php');
+    header('Location: students.php');
     exit;
 }

@@ -223,6 +223,27 @@ try {
 // Don't close connection yet - needed for modal includes
 // $conn->close();
 ?>
+<?php if (!empty($_SESSION['student_success'])): ?>
+<script>
+window.addEventListener('DOMContentLoaded', function() {
+    let msg = "<?php echo addslashes($_SESSION['student_success']); ?>";
+    <?php if (!empty($_SESSION['api_message_status'])): ?>
+        msg += "\n<?php echo addslashes($_SESSION['api_message_status']); ?>";
+    <?php endif; ?>
+    alert(msg); // Use a better popup if you want (e.g. SweetAlert)
+});
+</script>
+<?php
+unset($_SESSION['student_success']);
+unset($_SESSION['api_message_status']);
+endif;
+if (!empty($_SESSION['student_error'])): ?>
+<script>
+window.addEventListener('DOMContentLoaded', function() {
+    alert("<?php echo addslashes($_SESSION['student_error']); ?>");
+});
+</script>
+<?php unset($_SESSION['student_error']); endif; ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -406,6 +427,10 @@ try {
             padding: 1.5rem;
             min-height: 100vh;
             background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            width: 100vw;
+            max-width: 100vw;
+            box-sizing: border-box;
+            overflow-x: hidden;
         }
         
         .page-header {
@@ -445,6 +470,7 @@ try {
             margin-bottom: 1.5rem;
             overflow: hidden;
             width: 100%;
+            min-width: 0;
             border: 1px solid rgba(0, 112, 74, 0.1);
         }
         
@@ -561,12 +587,16 @@ try {
         
         /* Table Styles */
         .table-responsive {
+            width: 100%;
             overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
         
         .data-table {
             width: 100%;
+            min-width: 900px;
             border-collapse: collapse;
+            table-layout: auto;
         }
         
         .data-table th,
@@ -633,32 +663,48 @@ try {
         }
         
         /* Responsive Styles */
-        @media (max-width: 992px) {
-            .sidebar {
-                width: 70px;
-                overflow: visible;
-            }
-            
-            .sidebar-header, .sidebar-user, .menu-heading {
-                display: none;
-            }
-            
-            .menu-item {
-                padding: 1rem 0;
-                justify-content: center;
-            }
-            
-            .menu-item i {
-                margin-right: 0;
-                font-size: 1.3rem;
-            }
-            
-            .menu-item a span {
-                display: none;
-            }
-            
+        @media (max-width: 1200px) {
             .main-content {
-                margin-left: 70px;
+                width: 100vw;
+                max-width: 100vw;
+                margin-left: 0;
+                padding: 1rem;
+            }
+            .card {
+                width: 100vw;
+                max-width: 100vw;
+            }
+            .table-responsive {
+                width: 100vw;
+                max-width: 100vw;
+            }
+            .data-table {
+                min-width: 700px;
+            }
+        }
+        @media (max-width: 768px) {
+            .main-content {
+                width: 100vw;
+                max-width: 100vw;
+                margin-left: 0;
+                padding: 0.5rem;
+            }
+            .card {
+                width: 100vw;
+                max-width: 100vw;
+            }
+            .table-responsive {
+                width: 100vw;
+                max-width: 100vw;
+            }
+            .data-table {
+                min-width: 500px;
+            }
+            .data-table th,
+            .data-table td {
+                padding: 0.5rem;
+                font-size: 0.95rem;
+                word-break: break-word;
             }
         }
         
@@ -1220,35 +1266,72 @@ try {
                                         </td>
                                         <td>
                                             <div class="status-container" style="position: relative;">
-                                                <span class="status-badge status-<?php echo htmlspecialchars($student['status'] ?? 'active'); ?>" 
-                                                      title="Click to change status" 
-                                                      onclick="toggleStatusDropdown(event, <?php echo $student['id']; ?>)" 
-                                                      style="cursor: pointer;">
-                                                    <i class="fas <?php 
-                                                        $statusIcon = 'fa-user-check'; // Default for active
-                                                        if ($student['status'] === 'inactive') $statusIcon = 'fa-user-clock';
-                                                        else if ($student['status'] === 'graduated') $statusIcon = 'fa-user-graduate';
-                                                        else if ($student['status'] === 'shifted') $statusIcon = 'fa-user-slash';
-                                                        echo $statusIcon;
-                                                    ?>"></i>
-                                                    <?php echo ucfirst(htmlspecialchars($student['status'] ?? 'active')); ?>
-                                                    <i class="fas fa-caret-down" style="margin-left: 5px; font-size: 0.8rem;"></i>
-                                                </span>
-                                                <div id="status-dropdown-<?php echo $student['id']; ?>" class="status-dropdown" style="display: none;">
-                                                    <div class="status-option status-active" onclick="updateStudentStatus(<?php echo $student['id']; ?>, 'active')">
-                                                        <i class="fas fa-user-check"></i> Active
-                                                    </div>
-                                                    <div class="status-option status-inactive" onclick="updateStudentStatus(<?php echo $student['id']; ?>, 'inactive')">
-                                                        <i class="fas fa-user-clock"></i> Inactive
-                                                    </div>
-                                                    <div class="status-option status-graduated" onclick="updateStudentStatus(<?php echo $student['id']; ?>, 'graduated')">
-                                                        <i class="fas fa-user-graduate"></i> Graduated
-                                                    </div>
-                                                    <div class="status-option status-shifted" onclick="updateStudentStatus(<?php echo $student['id']; ?>, 'shifted')">
-                                                        <i class="fas fa-user-slash"></i> Shifted
-                                                    </div>
-                                                </div>
+                                                <select class="status-dropdown-select" data-student-id="<?php echo $student['id']; ?>" style="padding: 0.3rem 0.7rem; border-radius: 20px; border: 1px solid #ccc; font-size: 0.95rem; background: #fff; min-width: 110px;">
+                                                    <option value="active" <?php if($student['status']==='active') echo 'selected'; ?>>Active</option>
+                                                    <option value="inactive" <?php if($student['status']==='inactive') echo 'selected'; ?>>Inactive</option>
+                                                    <option value="graduated" <?php if($student['status']==='graduated') echo 'selected'; ?>>Graduated</option>
+                                                    <option value="shifted" <?php if($student['status']==='shifted') echo 'selected'; ?>>Shifted</option>
+                                                </select>
                                             </div>
+    <script>
+    // Handle status dropdown change
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.status-dropdown-select').forEach(function(select) {
+            select.addEventListener('change', function() {
+                var studentId = this.getAttribute('data-student-id');
+                var newStatus = this.value;
+                this.disabled = true;
+                var original = this;
+                fetch('update_handler.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'id=' + encodeURIComponent(studentId) + '&type=student&status=' + encodeURIComponent(newStatus)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if(data.success) {
+                        original.style.background = '#e8f5e9';
+                        setTimeout(() => { original.style.background = '#fff'; }, 1000);
+                        // Remove row if filter is active and status no longer matches
+                        var urlParams = new URLSearchParams(window.location.search);
+                        var filterStatus = urlParams.get('status');
+                        if (filterStatus && filterStatus !== newStatus) {
+                            // Remove the row from the table
+                            var row = original.closest('tr');
+                            if (row) {
+                                row.style.transition = 'opacity 0.3s';
+                                row.style.opacity = '0';
+                                setTimeout(function() {
+                                    row.remove();
+                                    searchStudents && searchStudents();
+                                }, 300);
+                            }
+                        } else if (filterStatus === 'shifted' && newStatus === 'shifted') {
+                            // If filter is shifted and status is shifted, update the row visually (optional: show a badge or highlight)
+                            var row = original.closest('tr');
+                            if (row) {
+                                row.style.background = '#f3e6fa'; // light purple highlight
+                                setTimeout(() => { row.style.background = ''; }, 1200);
+                            }
+                        }
+                        // Optionally show a toast/alert
+                        if (typeof showAlert === 'function') {
+                            showAlert('success', '<i class="fas fa-check-circle"></i> Status updated to ' + newStatus.charAt(0).toUpperCase() + newStatus.slice(1));
+                        }
+                    } else {
+                        alert('Failed to update status: ' + (data.message || 'Unknown error'));
+                    }
+                })
+                .catch(() => {
+                    alert('Failed to update status.');
+                })
+                .finally(() => {
+                    original.disabled = false;
+                });
+            });
+        });
+    });
+    </script>
                                         </td>
                                         <td>
                                             <div class="action-btns">
@@ -1574,8 +1657,52 @@ try {
             fetch(`get_edit_form.php?type=student&id=${studentId}`)
                 .then(response => response.text())
                 .then(html => {
+                    // If the returned HTML is empty or just whitespace, show a fallback message
+                    if (!html || html.trim() === '' || html.trim() === '<form id="editForm"></form>') {
+                        // Render a basic fallback form with some editable fields
+                        formContainer.innerHTML = `
+                            <form id="editForm">
+                                <div class="modal-form">
+                                    <div class="form-section">
+                                        <div class="enhanced-form-group">
+                                            <label class="enhanced-label" for="first_name"><i class="fas fa-user"></i> First Name</label>
+                                            <input type="text" class="form-control enhanced-input" id="first_name" name="first_name" value="" required>
+                                        </div>
+                                        <div class="enhanced-form-group">
+                                            <label class="enhanced-label" for="last_name"><i class="fas fa-user"></i> Last Name</label>
+                                            <input type="text" class="form-control enhanced-input" id="last_name" name="last_name" value="" required>
+                                        </div>
+                                        <div class="enhanced-form-group">
+                                            <label class="enhanced-label" for="reg_number"><i class="fas fa-id-card"></i> Registration Number</label>
+                                            <input type="text" class="form-control enhanced-input" id="reg_number" name="reg_number" value="" required>
+                                        </div>
+                                        <div class="enhanced-form-group">
+                                            <label class="enhanced-label" for="parent_name"><i class="fas fa-user-friends"></i> Parent/Guardian Name</label>
+                                            <input type="text" class="form-control enhanced-input" id="parent_name" name="parent_name" value="" required>
+                                        </div>
+                                        <div class="enhanced-form-group">
+                                            <label class="enhanced-label" for="parent_phone"><i class="fas fa-phone"></i> Parent Phone</label>
+                                            <input type="text" class="form-control enhanced-input" id="parent_phone" name="parent_phone" value="" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-actions" style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem;">
+                                    <button type="submit" class="btn btn-primary" id="modalSubmitBtn"><i class="fas fa-save"></i> Save Changes</button>
+                                    <button type="button" class="btn btn-danger" onclick="closeStudentEditModal()"><i class="fas fa-times"></i> Cancel</button>
+                                </div>
+                            </form>
+                        `;
+                        // Add event listener to the fallback form
+                        const form = document.getElementById('editForm');
+                        if (form) {
+                            form.addEventListener('submit', function(e) {
+                                e.preventDefault();
+                                confirmUpdateStudent(new FormData(form));
+                            });
+                        }
+                        return;
+                    }
                     formContainer.innerHTML = html;
-                    
                     // Add event listener to the form
                     const form = document.getElementById('editForm');
                     if (form) {
@@ -1586,7 +1713,7 @@ try {
                     }
                 })
                 .catch(error => {
-                    formContainer.innerHTML = `<div class="alert alert-danger">Error loading form: ${error.message}</div>`;
+                    formContainer.innerHTML = `<div class=\"alert alert-danger\">Error loading form: ${error.message}</div>`;
                 });
         }
         
@@ -1601,17 +1728,13 @@ try {
             const modal = document.getElementById('confirmationModal');
             const message = document.getElementById('confirmationMessage');
             const confirmBtn = document.getElementById('confirmButton');
-            
             message.innerHTML = 'Are you sure you want to update this student information?';
             modal.style.display = 'block';
-            
-            // Set up the confirm button action
             confirmCallback = function() {
                 updateStudent(formData);
-            };
-            
-            confirmBtn.onclick = function() {
                 closeConfirmationModal();
+            };
+            confirmBtn.onclick = function() {
                 if (confirmCallback) confirmCallback();
             };
         }
@@ -1676,19 +1799,45 @@ try {
             
             // Set up the confirm button action
             confirmCallback = function() {
-                deleteStudent(studentId);
+                // Actually delete the student after confirmation
+                fetch('delete_handler.php', {
+                    method: 'POST',
+                    body: (() => {
+                        const formData = new FormData();
+                        formData.append('id', studentId);
+                        formData.append('type', 'student');
+                        return formData;
+                    })()
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Remove the student row from the table
+                        const studentRow = document.getElementById(`student-row-${studentId}`);
+                        if (studentRow) {
+                            studentRow.style.transition = 'opacity 0.3s';
+                            studentRow.style.opacity = '0';
+                            setTimeout(() => {
+                                studentRow.remove();
+                                // Update search results counter
+                                if (typeof searchStudents === 'function') searchStudents();
+                            }, 300);
+                        }
+                        showAlert('success', '<i class="fas fa-check-circle"></i> Student deleted successfully.');
+                    } else {
+                        showAlert('danger', '<i class="fas fa-exclamation-circle"></i> Error: ' + (data.message || 'Failed to delete student'));
+                    }
+                })
+                .catch(error => {
+                    showAlert('danger', '<i class="fas fa-exclamation-circle"></i> An error occurred while deleting the student.');
+                })
+                .finally(() => {
+                    closeConfirmationModal();
+                });
             };
             
             confirmBtn.onclick = function() {
-                closeConfirmationModal();
                 if (confirmCallback) confirmCallback();
-            };
-            
-            // Close modal when clicking outside
-            window.onclick = function(event) {
-                if (event.target == modal) {
-                    closeConfirmationModal();
-                }
             };
         }
         

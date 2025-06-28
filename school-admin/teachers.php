@@ -126,7 +126,7 @@ $conn->close();
     <title>Manage Teachers - <?php echo htmlspecialchars($school_info['name'] ?? 'School'); ?></title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/universal-confirmation.css">
+    <!-- <link rel="stylesheet" href="css/universal-confirmation.css"> -->
     <style>
         :root {
             --primary-color: <?php echo PRIMARY_COLOR ?? '#00704a'; ?>;
@@ -341,7 +341,13 @@ $conn->close();
         .main-content {
             flex: 1;
             margin-left: var(--sidebar-width);
-            padding: 2rem;
+            padding: 1.5rem;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            width: 100vw;
+            max-width: 100vw;
+            box-sizing: border-box;
+            overflow-x: hidden;
         }
         
         .page-header {
@@ -376,10 +382,13 @@ $conn->close();
         /* Card Styles */
         .card {
             background-color: var(--light-color);
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            margin-bottom: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
             overflow: hidden;
+            width: 100%;
+            min-width: 0;
+            border: 1px solid rgba(0, 112, 74, 0.1);
         }
         
         .card-header {
@@ -488,31 +497,35 @@ $conn->close();
         
         /* Table Styles */
         .table-responsive {
+            width: 100%;
             overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
-        
+
         .data-table {
             width: 100%;
+            min-width: 900px;
             border-collapse: collapse;
+            table-layout: auto;
         }
-        
+
         .data-table th,
         .data-table td {
             padding: 1rem;
             text-align: left;
             border-bottom: 1px solid var(--border-color);
         }
-        
+
         .data-table th {
             font-weight: 600;
             color: var(--primary-color);
             background-color: rgba(0, 112, 74, 0.05);
         }
-        
+
         .data-table tr:last-child td {
             border-bottom: none;
         }
-        
+
         .data-table tr:hover {
             background-color: rgba(0, 0, 0, 0.02);
         }
@@ -560,42 +573,83 @@ $conn->close();
         }
         
         /* Responsive Styles */
+        @media (max-width: 1200px) {
+            .main-content {
+                width: 100vw;
+                max-width: 100vw;
+                margin-left: 0;
+                padding: 1rem;
+            }
+            .card {
+                width: 100vw;
+                max-width: 100vw;
+            }
+            .table-responsive {
+                width: 100vw;
+                max-width: 100vw;
+            }
+            .data-table {
+                min-width: 700px;
+            }
+        }
         @media (max-width: 992px) {
             .sidebar {
                 width: 70px;
                 overflow: visible;
             }
-            
             .sidebar-header, .sidebar-user, .menu-heading {
                 display: none;
             }
-            
             .menu-item {
                 padding: 1rem 0;
                 justify-content: center;
             }
-            
             .menu-item i {
                 margin-right: 0;
                 font-size: 1.3rem;
             }
-            
             .menu-item a span {
                 display: none;
             }
-            
             .main-content {
                 margin-left: 70px;
             }
         }
-        
         @media (max-width: 768px) {
             .main-content {
-                padding: 1rem;
+                width: 100vw;
+                max-width: 100vw;
+                margin-left: 0;
+                padding: 0.5rem;
             }
-            
+            .card {
+                width: 100vw;
+                max-width: 100vw;
+            }
+            .table-responsive {
+                width: 100vw;
+                max-width: 100vw;
+            }
+            .data-table {
+                min-width: 500px;
+            }
+            .data-table th,
+            .data-table td {
+                padding: 0.5rem;
+                font-size: 0.95rem;
+                word-break: break-word;
+            }
             .form-grid {
                 grid-template-columns: 1fr;
+            }
+        }
+        @media (max-width: 480px) {
+            .main-content {
+                margin-left: 0;
+                padding: 0.5rem;
+            }
+            .sidebar {
+                transform: translateX(-100%);
             }
         }
     </style>
@@ -747,16 +801,16 @@ $conn->close();
     <div id="confirmationModal" class="modal">
         <div class="modal-content" style="max-width: 500px;">
             <div class="modal-header">
-                <h2><i class="fas fa-question-circle"></i> Confirmation</h2>
-                <span class="close" onclick="closeConfirmationModal()">&times;</span>
+                <h2><i class="fas fa-exclamation-triangle"></i> Confirmation</h2>
+                <span class="close-modal" onclick="closeConfirmationModal()">&times;</span>
             </div>
             <div class="modal-body">
-                <p id="confirmationMessage">Are you sure you want to perform this action?</p>
-                <div class="form-actions" style="margin-top: 1.5rem;">
-                    <button type="button" class="btn btn-secondary" onclick="closeConfirmationModal()">
+                <div id="confirmationMessage" style="margin-bottom: 1.5rem; font-size: 1.1rem; line-height: 1.5;"></div>
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" class="btn" onclick="closeConfirmationModal()" style="background-color: #6c757d; color: white; padding: 0.75rem 1.5rem;">
                         <i class="fas fa-times"></i> Cancel
                     </button>
-                    <button type="button" class="btn btn-danger" id="confirmButton">
+                    <button type="button" id="confirmButton" class="btn btn-danger" style="padding: 0.75rem 1.5rem;">
                         <i class="fas fa-check"></i> Confirm
                     </button>
                 </div>
@@ -914,17 +968,15 @@ $conn->close();
             const modal = document.getElementById('confirmationModal');
             const message = document.getElementById('confirmationMessage');
             const confirmBtn = document.getElementById('confirmButton');
-            
             message.innerHTML = 'Are you sure you want to update this teacher information?';
             modal.style.display = 'block';
-            
             // Set up the confirm button action
             confirmCallback = function() {
+                // Actually update the teacher after confirmation
                 updateTeacher(formData);
-            };
-            
-            confirmBtn.onclick = function() {
                 closeConfirmationModal();
+            };
+            confirmBtn.onclick = function() {
                 if (confirmCallback) confirmCallback();
             };
         }
@@ -960,19 +1012,74 @@ $conn->close();
             const modal = document.getElementById('confirmationModal');
             const message = document.getElementById('confirmationMessage');
             const confirmBtn = document.getElementById('confirmButton');
-            
-            message.innerHTML = 'Are you sure you want to delete this teacher? This action cannot be undone.';
+            message.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: #f44336;"></i> Are you sure you want to delete this teacher? This action cannot be undone.';
             modal.style.display = 'block';
-            
-            // Set up the confirm button action
             confirmCallback = function() {
-                window.location.href = `teachers.php?action=delete&id=${teacherId}`;
+                // AJAX delete
+                const formData = new FormData();
+                formData.append('id', teacherId);
+                formData.append('type', 'teacher');
+                fetch('delete_handler.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Remove the teacher row from the table
+                        const row = document.querySelector(`a.btn-icon.delete[data-id='${teacherId}']`).closest('tr');
+                        if (row) {
+                            row.style.transition = 'opacity 0.3s';
+                            row.style.opacity = '0';
+                            setTimeout(() => { row.remove(); }, 300);
+                        }
+                        showAlert('success', '<i class="fas fa-check-circle"></i> Teacher deleted successfully.');
+                    } else {
+                        showAlert('danger', '<i class="fas fa-exclamation-circle"></i> Error: ' + (data.message || 'Failed to delete teacher'));
+                    }
+                })
+                .catch(() => {
+                    showAlert('danger', '<i class="fas fa-exclamation-circle"></i> An error occurred while deleting the teacher.');
+                })
+                .finally(() => {
+                    closeConfirmationModal();
+                });
             };
-            
             confirmBtn.onclick = function() {
-                closeConfirmationModal();
                 if (confirmCallback) confirmCallback();
             };
+        // Show alert function (copied from students.php for consistency)
+        function showAlert(type, message) {
+            // Remove any existing alerts
+            const existingAlerts = document.querySelectorAll('.alert-notification');
+            existingAlerts.forEach(alert => alert.remove());
+            // Create new alert
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-notification`;
+            alertDiv.innerHTML = message;
+            alertDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 9999;
+                min-width: 300px;
+                max-width: 500px;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                animation: slideInRight 0.3s ease;
+                background-color: ${type === 'success' ? '#d4edda' : '#f8d7da'};
+                color: ${type === 'success' ? '#155724' : '#721c24'};
+                border: 1px solid ${type === 'success' ? '#c3e6cb' : '#f5c6cb'};
+            `;
+            document.body.appendChild(alertDiv);
+            setTimeout(() => {
+                alertDiv.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => {
+                    if (alertDiv.parentNode) alertDiv.remove();
+                }, 300);
+            }, 5000);
+        }
         }
         
         // Close confirmation modal
@@ -1169,9 +1276,6 @@ $conn->close();
         </div>
     </div>
 
-    <script src="js/universal-confirmation.js"></script>
-
-    <!-- Universal Modals -->
-    <?php include 'includes/universal-modals.php'; ?>
+    <!-- universal-confirmation and universal-modals removed to prevent double popups for delete -->
 </body>
 </html>

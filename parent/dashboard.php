@@ -26,6 +26,7 @@ $requests = []; // Initialize requests array
 
 // Handle feedback submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_feedback'])) {
+    error_log('Feedback handler reached');
     $feedbackText = trim($_POST['message'] ?? '');
     $feedbackType = trim($_POST['feedback_type'] ?? '');
     $subject = trim($_POST['subject'] ?? '');
@@ -36,13 +37,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_feedback'])) {
         $feedbackError = 'Please select a feedback type.';
     } elseif (empty($subject)) {
         $feedbackError = 'Please enter a subject for your feedback.';
-    } else {
+    }
+    if (!$feedbackError) {
         $conn = null;
         $stmt = null;
-        
         try {
             $conn = getDbConnection();
-            
             // First, get the parent's email if not in session
             if (empty($parentEmail)) {
                 $parentStmt = $conn->prepare("SELECT email, CONCAT(first_name, ' ', last_name) as full_name FROM parents WHERE id = ?");
@@ -55,52 +55,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_feedback'])) {
                 }
                 $parentStmt->close();
             }
-            
             if (empty($parentEmail)) {
                 throw new Exception('Parent email not found in the system.');
             }
-            
             $conn->begin_transaction();
-
             // Get the school_id
             $schoolQuery = "SELECT s.school_id 
                           FROM students s 
                           INNER JOIN student_parent sp ON s.id = sp.student_id 
                           WHERE sp.parent_id = ? 
                           LIMIT 1";
-            
             $stmt = $conn->prepare($schoolQuery);
             if (!$stmt) {
                 throw new Exception('Failed to prepare school query: ' . $conn->error);
             }
-            
             $stmt->bind_param('i', $parentId);
             if (!$stmt->execute()) {
                 throw new Exception('Failed to get school info: ' . $stmt->error);
             }
-            
             $result = $stmt->get_result();
             if ($result->num_rows === 0) {
                 throw new Exception('No school found for this parent.');
             }
-            
             $schoolData = $result->fetch_assoc();
             $schoolId = $schoolData['school_id'];
             $stmt->close();
+
+            // Sentiment analysis via Python script
+            $escapedFeedback = escapeshellarg($feedbackText);
+            $pythonScript = escapeshellcmd(__DIR__ . '/../python/sentiment_analysis.py');
+            $command = "python $pythonScript $escapedFeedback";
+            $output = shell_exec($command);
+            $result = json_decode($output, true);
             
-            // Insert the feedback
-            $insertSQL = "INSERT INTO parent_feedback (parent_id, message, school_id, feedback_type, subject) 
-                         VALUES (?, ?, ?, ?, ?)";
+            // Fallback if sentiment analysis fails
+            if (!$result || !isset($result['sentiment_score'])) {
+                $sentimentScore = 0.5; // neutral
+                $sentimentLabel = 'neutral';
+                $suggestion = 'Thank you for your feedback. We will review and address your concerns.';
+            } else {
+                $sentimentScore = $result['sentiment_score'];
+                $sentimentLabel = $result['sentiment_label'];
+                $suggestion = $result['suggestion'];
+            }
+
+            // Insert the feedback with sentiment fields
+            $insertSQL = "INSERT INTO parent_feedback (parent_id, school_id, subject, sentiment_score, sentiment_label, message, suggestion, feedback_type) 
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
             $stmt = $conn->prepare($insertSQL);
             if (!$stmt) {
                 throw new Exception('Failed to prepare feedback insert: ' . $conn->error);
             }
-            
-            $stmt->bind_param('isiss', $parentId, $feedbackText, $schoolId, $feedbackType, $subject);
+            $stmt->bind_param('iisdssss', $parentId, $schoolId, $subject, $sentimentScore, $sentimentLabel, $feedbackText, $suggestion, $feedbackType);
             if (!$stmt->execute()) {
                 throw new Exception('Failed to submit feedback: ' . $stmt->error);
             }
-            
+            error_log('Feedback successfully inserted into parent_feedback table');
             // Send email notification using improved email helper
             $emailResult = sendFeedbackConfirmationEmail(
                 $parentEmail,
@@ -109,15 +119,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_feedback'])) {
                 $subject,
                 $feedbackText
             );
-            
             if ($emailResult['success']) {
-                $conn->commit();
                 $feedbackSuccess = 'Thank you! Your feedback has been submitted successfully. A confirmation email has been sent to ' . $parentEmail;
+                
+                // Store sentiment results for modal display
+                $_SESSION['sentiment_results'] = [
+                    'label' => $sentimentLabel,
+                    'score' => $sentimentScore,
+                    'suggestion' => $suggestion
+                ];
             } else {
-                error_log('Failed to send email: ' . $emailResult['message']);
-                $conn->commit();
-                $feedbackSuccess = 'Your feedback has been submitted successfully. However, we could not send the confirmation email. Please check your email address.';
+                $feedbackError = 'Feedback submitted, but failed to send confirmation email.';
             }
+            $conn->commit();
         } catch (Exception $e) {
             if (isset($conn)) {
                 $conn->rollback();
@@ -125,12 +139,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_feedback'])) {
             $feedbackError = 'Failed to submit feedback: ' . $e->getMessage();
             error_log('Feedback submission error: ' . $e->getMessage());
         } finally {
-            if (isset($stmt)) {
-                $stmt->close();
-            }
-            if (isset($conn)) {
-                $conn->close();
-            }
+            if (isset($stmt)) { $stmt->close(); }
+            if (isset($conn)) { $conn->close(); }
         }
     }
 }
@@ -141,16 +151,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_feedback'])) {
 // Handle permission request submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['permission_request'])) {
     $request_text = trim($_POST['request_text'] ?? '');
-    
     if (empty($request_text)) {
         $error = 'Please enter your permission request.';
     } else {
         try {
             $conn = getDbConnection();
-            
             // Check if permission_requests table exists
             $tableCheckResult = $conn->query("SHOW TABLES LIKE 'permission_requests'");
-            
             if ($tableCheckResult && $tableCheckResult->num_rows > 0) {
                 // Table exists, get student info
                 $studentStmt = $conn->prepare("SELECT s.id, s.school_id 
@@ -158,41 +165,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['permission_request'])
                                              JOIN student_parent sp ON s.id = sp.student_id 
                                              WHERE sp.parent_id = ? 
                                              LIMIT 1");
-                
                 if (!$studentStmt) {
                     throw new Exception("Failed to prepare student query: " . $conn->error);
                 }
-                
                 $studentStmt->bind_param('i', $parentId);
                 if (!$studentStmt->execute()) {
                     throw new Exception("Failed to execute student query: " . $studentStmt->error);
                 }
-                
                 $studentResult = $studentStmt->get_result();
                 if ($studentResult->num_rows > 0) {
                     $studentRow = $studentResult->fetch_assoc();
                     $studentId = $studentRow['id'];
-                    
                     // Insert permission request
                     $currentDate = date('Y-m-d H:i:s');
                     $tomorrowDate = date('Y-m-d H:i:s', strtotime('+1 day'));
-                    
                     $stmt = $conn->prepare("INSERT INTO permission_requests 
                                           (student_id, parent_id, request_type, start_date, end_date, reason, status) 
                                           VALUES (?, ?, 'other', ?, ?, ?, 'pending')");
-                    
                     if (!$stmt) {
                         throw new Exception("Failed to prepare insert query: " . $conn->error);
                     }
-                    
                     $stmt->bind_param('iisss', $studentId, $parentId, $currentDate, $tomorrowDate, $request_text);
-                    
                     if ($stmt->execute()) {
                         $success = 'Your permission request has been submitted successfully.';
+                        // Prevent resubmission on refresh
+                        $_POST = array();
+                        $_SERVER['REQUEST_METHOD'] = 'GET';
+                        header('Location: dashboard.php?permission_success=1');
+                        exit;
                     } else {
                         throw new Exception("Failed to submit request: " . $stmt->error);
                     }
-                    
                     $stmt->close();
                 } else {
                     $error = 'No student associated with your account. Please contact the school administrator.';
@@ -333,7 +336,7 @@ try {
                 }
                 
                 // Using standard schema with student join
-                $stmt = $conn->prepare("SELECT pr.id, pr.reason as request_text, pr.status, pr.created_at, 
+                $stmt = $conn->prepare("SELECT pr.id, pr.reason as request_text, pr.status, pr.created_at, pr.response_comment,
                                       $nameFields as student_name, $idField as student_id 
                                       FROM permission_requests pr 
                                       LEFT JOIN students s ON pr.student_id = s.id 
@@ -341,14 +344,14 @@ try {
                                       ORDER BY pr.created_at DESC");
             } else {
                 // Students table doesn't exist, use simplified query
-                $stmt = $conn->prepare("SELECT id, reason as request_text, status, created_at 
+                $stmt = $conn->prepare("SELECT id, reason as request_text, status, created_at, response_comment
                                       FROM permission_requests 
                                       WHERE parent_id = ? 
                                       ORDER BY created_at DESC");
             }
         } else {
             // Using simplified schema
-            $stmt = $conn->prepare("SELECT id, request_text, status, created_at 
+            $stmt = $conn->prepare("SELECT id, request_text, status, created_at, response_comment
                                   FROM permission_requests 
                                   WHERE parent_id = ? 
                                   ORDER BY created_at DESC");
@@ -878,6 +881,39 @@ try {
                     .form-group.focused .form-label i {
                         transform: scale(1.1);
                     }
+
+                    /* Tooltip for status badge */
+                    .popover-status {
+                        position: relative;
+                        cursor: pointer;
+                    }
+                    .popover-status::after {
+                        content: attr(data-tooltip);
+                        display: none;
+                        position: absolute;
+                        left: 50%;
+                        top: 120%;
+                        transform: translateX(-50%);
+                        min-width: 180px;
+                        max-width: 350px;
+                        background: #fff;
+                        color: #333;
+                        border: 1px solid #ccc;
+                        border-radius: 8px;
+                        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+                        padding: 12px 16px;
+                        font-size: 0.95em;
+                        z-index: 100;
+                        white-space: pre-line;
+                        opacity: 0;
+                        pointer-events: none;
+                        transition: opacity 0.2s;
+                    }
+                    .popover-status:hover::after {
+                        display: block;
+                        opacity: 1;
+                        pointer-events: none;
+                    }
                 </style>
 </head>
 <body>
@@ -1139,9 +1175,33 @@ try {
                                             <?php endif; ?>
                                         </td>
                                         <td>
-                                            <span class="status-badge status-<?php echo strtolower($request['status']); ?>">
-                                                <?php echo ucfirst($request['status']); ?>
-                                            </span>
+                                            <?php
+                                                $status = strtolower($request['status']);
+                                                $badgeClass = 'status-badge status-' . $status . ' popover-status';
+                                                $comment = isset($request['response_comment']) ? $request['response_comment'] : '';
+                                                $tooltip = '';
+                                                if ($status === 'pending') {
+                                                    $tooltip = 'Wait for the admin to react';
+                                                } elseif ($status === 'approved' || $status === 'rejected') {
+                                                    // Only show tooltip if comment is not null and not empty after trim
+                                                    if (!is_null($comment) && trim($comment) !== '') {
+                                                        $tooltip = trim($comment);
+                                                    } else {
+                                                        $tooltip = '';
+                                                    }
+                                                } else {
+                                                    $tooltip = ucfirst($status);
+                                                }
+                                            ?>
+                                            <?php if ($tooltip !== ''): ?>
+                                                <span class="<?php echo $badgeClass; ?>" data-tooltip="<?php echo htmlspecialchars($tooltip, ENT_QUOTES); ?>">
+                                                    <?php echo ucfirst($request['status']); ?>
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="<?php echo $badgeClass; ?>">
+                                                    <?php echo ucfirst($request['status']); ?>
+                                                </span>
+                                            <?php endif; ?>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -1180,11 +1240,22 @@ try {
             <div class="card-header">
                 <h2><i class="fas fa-comment"></i> Provide Feedback</h2>
             </div>
-            <div class="card-body">
+            <divb
                 <?php if ($feedbackSuccess): ?>
                     <div class="alert alert-success">
                         <?php echo htmlspecialchars($feedbackSuccess); ?>
                     </div>
+                    
+                    <?php if (isset($_SESSION['sentiment_results'])): ?>
+                        <script>
+                            // Show sentiment analysis results
+                            document.addEventListener('DOMContentLoaded', function() {
+                                const results = <?php echo json_encode($_SESSION['sentiment_results']); ?>;
+                                showSentimentResults(results.label, results.score, results.suggestion);
+                            });
+                        </script>
+                        <?php unset($_SESSION['sentiment_results']); ?>
+                    <?php endif; ?>
                 <?php endif; ?>
                 
                 <?php if ($feedbackError): ?>
@@ -1261,82 +1332,17 @@ try {
                     </form>
                 </div>
 
-                <script>
-                    document.addEventListener('DOMContentLoaded', function() {
-                        const form = document.getElementById('feedbackForm');
-                        const formGroups = document.querySelectorAll('.form-group');
-                        const submitBtn = document.getElementById('submitButton');
-
-                        // Animated form appearance
-                        formGroups.forEach((group, index) => {
-                            setTimeout(() => {
-                                group.style.opacity = '1';
-                                group.style.transform = 'translateY(0)';
-                            }, 100 * (index + 1));
-                        });
-
-                        // Form field interactions
-                        formGroups.forEach(group => {
-                            const input = group.querySelector('.form-control');
-                            if (input) {
-                                // Initial check for pre-filled fields
-                                if (input.value) {
-                                    group.classList.add('focused');
-                                }
-
-                                // Focus events
-                                input.addEventListener('focus', () => {
-                                    group.classList.add('focused');
-                                });
-
-                                input.addEventListener('blur', () => {
-                                    if (!input.value) {
-                                        group.classList.remove('focused');
-                                    }
-                                });
-
-                                // Input validation
-                                input.addEventListener('input', () => {
-                                    if (input.value) {
-                                        group.classList.add('has-value');
-                                    } else {
-                                        group.classList.remove('has-value');
-                                    }
-                                });
-                            }
-                        });
-
-                        // Form submission handling
-                        form.addEventListener('submit', function(e) {
-                            const btn = this.querySelector('button[type="submit"]');
-                            btn.classList.add('loading');
-                            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Submitting...';
-                        });
-
-                        // Character counter for textarea
-                        const messageTextarea = document.getElementById('message');
-                        const messageGroup = messageTextarea.closest('.form-group');
-                        const charCounter = document.createElement('div');
-                        charCounter.className = 'char-counter';
-                        messageGroup.appendChild(charCounter);
-
-                        messageTextarea.addEventListener('input', function() {
-                            const remaining = 1000 - this.value.length;
-                            charCounter.textContent = `${remaining} characters remaining`;
-                            charCounter.style.color = remaining < 100 ? '#e74c3c' : '#7f8c8d';
-                        });
-
-                        // Custom select styling
-                        const select = document.querySelector('.custom-select');
-                        select.addEventListener('change', function() {
-                            if (this.value) {
-                                this.classList.add('selected');
-                            } else {
-                                this.classList.remove('selected');
-                            }
-                        });
-                    });
-                </script>
+                <!-- Sentiment Analysis Result Modal -->
+                <div id="sentimentModal" class="modal" style="display:none;">
+                    <div class="modal-content" style="max-width: 500px; border-radius: 16px; padding: 2rem; text-align: center;">
+                        <span class="close" onclick="closeSentimentModal()" style="float:right; font-size:1.5rem; cursor:pointer;">&times;</span>
+                        <div id="sentimentResultIcon" style="font-size:2.5rem; margin-bottom:1rem;"></div>
+                        <h3 id="sentimentResultLabel"></h3>
+                        <p id="sentimentResultScore" style="font-weight:500;"></p>
+                        <div id="sentimentSuggestion" style="margin-top:1.5rem; color:#00704A; font-weight:500;"></div>
+                        <button class="btn btn-primary" onclick="closeSentimentModal()" style="margin-top:2rem;">OK</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1434,6 +1440,52 @@ try {
             window.closeModal = function(modalId) {
                 document.getElementById(modalId).style.display = 'none';
             };
+        });
+    </script>
+    <script src="../includes/js/feedback-ajax.js"></script>
+    <script>
+        // Function to close sentiment modal
+        function closeSentimentModal() {
+            document.getElementById('sentimentModal').style.display = 'none';
+        }
+        
+        // Function to show sentiment analysis results
+        function showSentimentResults(sentimentLabel, sentimentScore, suggestion) {
+            const modal = document.getElementById('sentimentModal');
+            const icon = document.getElementById('sentimentResultIcon');
+            const label = document.getElementById('sentimentResultLabel');
+            const score = document.getElementById('sentimentResultScore');
+            const suggestionDiv = document.getElementById('sentimentSuggestion');
+            
+            // Set icon based on sentiment
+            if (sentimentLabel === 'positive') {
+                icon.innerHTML = '😊';
+                icon.style.color = '#4CAF50';
+            } else if (sentimentLabel === 'negative') {
+                icon.innerHTML = '😔';
+                icon.style.color = '#F44336';
+            } else {
+                icon.innerHTML = '😐';
+                icon.style.color = '#FF9800';
+            }
+            
+            // Set content
+            label.textContent = `Sentiment: ${sentimentLabel.charAt(0).toUpperCase() + sentimentLabel.slice(1)}`;
+            score.textContent = `Confidence: ${Math.round(sentimentScore * 100)}%`;
+            suggestionDiv.innerHTML = `<strong>Suggestion:</strong><br>${suggestion}`;
+            
+            // Show modal
+            modal.style.display = 'block';
+        }
+        
+        // Check if there are sentiment results in session storage
+        document.addEventListener('DOMContentLoaded', function() {
+            const sentimentData = sessionStorage.getItem('sentimentResults');
+            if (sentimentData) {
+                const data = JSON.parse(sentimentData);
+                showSentimentResults(data.label, data.score, data.suggestion);
+                sessionStorage.removeItem('sentimentResults');
+            }
         });
     </script>
 </body>

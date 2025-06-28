@@ -134,7 +134,8 @@ function updateStudent($conn, $student_id, $school_id, $data) {
             'parent_name' => 's',
             'parent_phone' => 's',
             'parent_email' => 's',
-            'address' => 's'
+            'address' => 's',
+            'status' => 's'
         ];
         
         foreach ($fields as $field => $type) {

@@ -119,17 +119,13 @@ function deleteStudent($conn, $student_id, $school_id) {
         ];
         
         foreach ($tables as $table => $column) {
-            $check_stmt = $conn->prepare("SHOW TABLES LIKE ?");
-            $check_stmt->bind_param('s', $table);
-            $check_stmt->execute();
-            
-            if ($check_stmt->get_result()->num_rows > 0) {
-                $delete_stmt = $conn->prepare("DELETE FROM {$table} WHERE {$column} = ?");
-                $delete_stmt->bind_param('i', $student_id);
-                $delete_stmt->execute();
-                $delete_stmt->close();
+            // Check if table exists
+            $result = $conn->query("SHOW TABLES LIKE '" . $conn->real_escape_string($table) . "'");
+            if ($result && $result->num_rows > 0) {
+                // Safe because $table and $column are from a hardcoded array
+                $sql = "DELETE FROM `{$table}` WHERE `{$column}` = " . intval($student_id);
+                $conn->query($sql);
             }
-            $check_stmt->close();
         }
         
         // Delete the student
@@ -284,7 +280,7 @@ function deleteDepartment($conn, $department_id, $school_id) {
         $conn->begin_transaction();
         
         // Verify department belongs to this school
-        $stmt = $conn->prepare("SELECT id FROM departments WHERE id = ? AND school_id = ?");
+        $stmt = $conn->prepare("SELECT dep_id FROM departments WHERE dep_id = ? AND school_id = ?");
         $stmt->bind_param('ii', $department_id, $school_id);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -305,7 +301,7 @@ function deleteDepartment($conn, $department_id, $school_id) {
         $update_teachers->close();
         
         // Delete the department
-        $stmt = $conn->prepare("DELETE FROM departments WHERE id = ? AND school_id = ?");
+        $stmt = $conn->prepare("DELETE FROM departments WHERE dep_id = ? AND school_id = ?");
         $stmt->bind_param('ii', $department_id, $school_id);
         $success = $stmt->execute();
         $stmt->close();
