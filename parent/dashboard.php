@@ -151,24 +151,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_feedback'])) {
 // Handle permission request submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['permission_request'])) {
     $request_text = trim($_POST['request_text'] ?? '');
+    $request_type = trim($_POST['request_type'] ?? 'other');
+    $student_select = intval($_POST['student_select'] ?? 0);
+    $start_date = $_POST['start_date'] ?? date('Y-m-d H:i:s');
+    $end_date = $_POST['end_date'] ?? date('Y-m-d H:i:s', strtotime('+1 day'));
+    
     if (empty($request_text)) {
         $error = 'Please enter your permission request.';
+    } elseif ($student_select == 0) {
+        $error = 'Please select a child.';
     } else {
         try {
             $conn = getDbConnection();
             // Check if permission_requests table exists
             $tableCheckResult = $conn->query("SHOW TABLES LIKE 'permission_requests'");
             if ($tableCheckResult && $tableCheckResult->num_rows > 0) {
-                // Table exists, get student info
+                // Table exists, verify student belongs to this parent
                 $studentStmt = $conn->prepare("SELECT s.id, s.school_id 
                                              FROM students s 
                                              JOIN student_parent sp ON s.id = sp.student_id 
-                                             WHERE sp.parent_id = ? 
-                                             LIMIT 1");
+                                             WHERE sp.parent_id = ? AND s.id = ?");
                 if (!$studentStmt) {
                     throw new Exception("Failed to prepare student query: " . $conn->error);
                 }
-                $studentStmt->bind_param('i', $parentId);
+                $studentStmt->bind_param('ii', $parentId, $student_select);
                 if (!$studentStmt->execute()) {
                     throw new Exception("Failed to execute student query: " . $studentStmt->error);
                 }
@@ -176,16 +182,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['permission_request'])
                 if ($studentResult->num_rows > 0) {
                     $studentRow = $studentResult->fetch_assoc();
                     $studentId = $studentRow['id'];
-                    // Insert permission request
-                    $currentDate = date('Y-m-d H:i:s');
-                    $tomorrowDate = date('Y-m-d H:i:s', strtotime('+1 day'));
+                    
+                    // Insert permission request with proper fields
                     $stmt = $conn->prepare("INSERT INTO permission_requests 
                                           (student_id, parent_id, request_type, start_date, end_date, reason, status) 
-                                          VALUES (?, ?, 'other', ?, ?, ?, 'pending')");
+                                          VALUES (?, ?, ?, ?, ?, ?, 'pending')");
                     if (!$stmt) {
                         throw new Exception("Failed to prepare insert query: " . $conn->error);
                     }
-                    $stmt->bind_param('iisss', $studentId, $parentId, $currentDate, $tomorrowDate, $request_text);
+                    $stmt->bind_param('iissss', $studentId, $parentId, $request_type, $start_date, $end_date, $request_text);
                     if ($stmt->execute()) {
                         $success = 'Your permission request has been submitted successfully.';
                         // Prevent resubmission on refresh
@@ -198,7 +203,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['permission_request'])
                     }
                     $stmt->close();
                 } else {
-                    $error = 'No student associated with your account. Please contact the school administrator.';
+                    $error = 'Selected student is not associated with your account.';
                 }
                 
                 $studentStmt->close();
@@ -265,9 +270,10 @@ try {
                 $is_primary = $row['is_primary'];
                 
                 // Get student details
-                $student_stmt = $conn->prepare("SELECT s.*, sc.name as school_name 
+                $student_stmt = $conn->prepare("SELECT s.*, s.reg_number, sc.name as school_name, d.department_name 
                                              FROM students s 
                                              JOIN schools sc ON s.school_id = sc.id 
+                                             LEFT JOIN departments d ON s.department_id = d.dep_id 
                                              WHERE s.id = ?");
                 $student_stmt->bind_param('i', $student_id);
                 $student_stmt->execute();
@@ -337,6 +343,7 @@ try {
                 
                 // Using standard schema with student join
                 $stmt = $conn->prepare("SELECT pr.id, pr.reason as request_text, pr.status, pr.created_at, pr.response_comment,
+                                      pr.start_date, pr.end_date, pr.request_type, pr.updated_at,
                                       $nameFields as student_name, $idField as student_id 
                                       FROM permission_requests pr 
                                       LEFT JOIN students s ON pr.student_id = s.id 
@@ -374,6 +381,8 @@ try {
         
         $requests = $result->fetch_all(MYSQLI_ASSOC);
         $stmt->close();
+        
+
     }
     $conn->close();
 } catch (Exception $e) {
@@ -882,37 +891,176 @@ try {
                         transform: scale(1.1);
                     }
 
-                    /* Tooltip for status badge */
+                    /* Enhanced Tooltip for status badge */
                     .popover-status {
                         position: relative;
-                        cursor: pointer;
+                        cursor: help;
+                        transition: all 0.3s ease;
                     }
+                    
+                    .popover-status:hover {
+                        transform: translateY(-1px);
+                        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                    }
+                    
                     .popover-status::after {
                         content: attr(data-tooltip);
                         display: none;
                         position: absolute;
                         left: 50%;
-                        top: 120%;
+                        top: 130%;
                         transform: translateX(-50%);
-                        min-width: 180px;
-                        max-width: 350px;
-                        background: #fff;
-                        color: #333;
-                        border: 1px solid #ccc;
-                        border-radius: 8px;
-                        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-                        padding: 12px 16px;
-                        font-size: 0.95em;
-                        z-index: 100;
+                        min-width: 280px;
+                        max-width: 400px;
+                        background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+                        color: #ecf0f1;
+                        border: 1px solid #34495e;
+                        border-radius: 12px;
+                        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+                        padding: 16px 20px;
+                        font-size: 0.9em;
+                        line-height: 1.5;
+                        z-index: 1000;
                         white-space: pre-line;
                         opacity: 0;
                         pointer-events: none;
-                        transition: opacity 0.2s;
+                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                        font-family: 'Poppins', sans-serif;
+                        text-align: left;
+                        backdrop-filter: blur(10px);
                     }
-                    .popover-status:hover::after {
+                    
+                    .popover-status::before {
+                        content: '';
+                        position: absolute;
+                        left: 50%;
+                        top: 120%;
+                        transform: translateX(-50%);
+                        border: 8px solid transparent;
+                        border-bottom-color: #2c3e50;
+                        display: none;
+                        z-index: 1001;
+                        opacity: 0;
+                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    }
+                    
+                    .popover-status:hover::after,
+                    .popover-status:hover::before {
                         display: block;
                         opacity: 1;
                         pointer-events: none;
+                    }
+                    
+                    /* Status-specific tooltip styling */
+                    .status-badge.status-pending.popover-status::after {
+                        background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+                        border-color: #e67e22;
+                    }
+                    
+                    .status-badge.status-pending.popover-status::before {
+                        border-bottom-color: #f39c12;
+                    }
+                    
+                    .status-badge.status-approved.popover-status::after {
+                        background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+                        border-color: #2ecc71;
+                    }
+                    
+                    .status-badge.status-approved.popover-status::before {
+                        border-bottom-color: #27ae60;
+                    }
+                    
+                    .status-badge.status-rejected.popover-status::after {
+                        background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+                        border-color: #c0392b;
+                    }
+                    
+                    .status-badge.status-rejected.popover-status::before {
+                        border-bottom-color: #e74c3c;
+                    }
+                    
+                    /* Status Badge Styles */
+                    .status-badge {
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 0.5rem;
+                        padding: 0.5rem 1rem;
+                        border-radius: 25px;
+                        font-size: 0.9rem;
+                        font-weight: 600;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                        transition: all 0.3s ease;
+                    }
+                    
+                    .status-badge:hover {
+                        transform: translateY(-1px);
+                        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                    }
+                    
+                    .status-badge.status-pending {
+                        background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+                        color: #856404;
+                        border: 1px solid #ffeaa7;
+                    }
+                    
+                    .status-badge.status-approved {
+                        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+                        color: #155724;
+                        border: 1px solid #c3e6cb;
+                    }
+                    
+                    .status-badge.status-rejected {
+                        background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+                        color: #721c24;
+                        border: 1px solid #f5c6cb;
+                    }
+                    
+                    /* Status update animations */
+                    @keyframes statusUpdate {
+                        0% { transform: scale(1); }
+                        50% { transform: scale(1.1); }
+                        100% { transform: scale(1); }
+                    }
+                    
+                    @keyframes slideInRight {
+                        from {
+                            transform: translateX(100%);
+                            opacity: 0;
+                        }
+                        to {
+                            transform: translateX(0);
+                            opacity: 1;
+                        }
+                    }
+                    
+                    @keyframes slideOutRight {
+                        from {
+                            transform: translateX(0);
+                            opacity: 1;
+                        }
+                        to {
+                            transform: translateX(100%);
+                            opacity: 0;
+                        }
+                    }
+                    
+                    /* Form validation styles */
+                    .form-control.error,
+                    select.error,
+                    input.error,
+                    textarea.error {
+                        border-color: #dc3545 !important;
+                        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+                    }
+                    
+                    .form-control.error:focus,
+                    select.error:focus,
+                    input.error:focus,
+                    textarea.error:focus {
+                        border-color: #dc3545 !important;
+                        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
                     }
                 </style>
 </head>
@@ -992,6 +1140,12 @@ try {
         <?php if ($success): ?>
             <div class="alert alert-success"><?php echo $success; ?></div>
         <?php endif; ?>
+        <?php if (isset($_GET['permission_success'])): ?>
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle"></i>
+                Your permission request has been submitted successfully and is now pending review.
+            </div>
+        <?php endif; ?>
         <?php if (isset($_SESSION['add_child_error'])): ?>
             <div class="alert alert-danger"><?php echo $_SESSION['add_child_error']; unset($_SESSION['add_child_error']); ?></div>
         <?php endif; ?>
@@ -1005,7 +1159,7 @@ try {
                     <i class="fas fa-user-graduate"></i>
                 </div>
                 <div class="stat-info">
-                    <h3><?php echo count($search_result ?? []); ?></h3>
+                    <h3><?php echo count($children ?? []); ?></h3>
                     <p>My Children</p>
                 </div>
             </div>
@@ -1043,32 +1197,49 @@ try {
                         <?php foreach ($children as $student): ?>
                             <div class="student-card">
                                 <div class="student-card-header">
-                                    <h3><?php echo htmlspecialchars(isset($student['name']) ? $student['name'] : (isset($student['first_name']) ? $student['first_name'] . ' ' . $student['last_name'] : 'N/A')); ?></h3>
+                                    <h3 style="margin-bottom: 1.2rem;"><?php echo htmlspecialchars(isset($student['name']) ? $student['name'] : (isset($student['first_name']) ? $student['first_name'] . ' ' . $student['last_name'] : '')); ?></h3>
                                     <?php if ($student['is_primary']): ?>
                                         <span class="badge primary-badge">Primary</span>
                                     <?php endif; ?>
                                 </div>
                                 <div class="student-card-body">
-                                    <div class="student-card-avatar">
+                                    <div class="student-card-avatar" style="font-size: 3.5rem; margin-bottom: 1.5rem; margin-top: 0.5rem;">
                                         <i class="fas fa-user-graduate"></i>
                                     </div>
                                     <div class="student-info">
-                                        <p><strong><?php echo htmlspecialchars(isset($student['registration_number']) ? $student['registration_number'] : (isset($student['admission_number']) ? $student['admission_number'] : 'N/A')); ?></strong></p>
-                                        <p><?php echo htmlspecialchars($student['school_name'] ?? 'N/A'); ?></p>
+                                        <p><strong><?php 
+                                            echo htmlspecialchars(
+                                                isset($student['reg_number']) ? $student['reg_number'] : 
+                                                (isset($student['admission_number']) ? $student['admission_number'] : '')
+                                            ); 
+                                        ?></strong></p>
+                                        <p><?php echo htmlspecialchars($student['school_name'] ?? ''); ?></p>
                                     </div>
                                     <div class="student-details">
                                         <div class="detail-item">
-                                            <span class="detail-label">Class:</span>
-                                            <span class="detail-value"><?php echo htmlspecialchars($student['class'] ?? 'N/A'); ?></span>
+                                            <span class="detail-label">Reg Number:</span>
+                                            <span class="detail-value"><?php 
+                                                echo htmlspecialchars(
+                                                    isset($student['reg_number']) ? $student['reg_number'] : 
+                                                    (isset($student['admission_number']) ? $student['admission_number'] : '')
+                                                ); 
+                                            ?></span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <span class="detail-label">Department:</span>
+                                            <span class="detail-value"><?php echo htmlspecialchars($student['department_name'] ?? ''); ?></span>
                                         </div>
                                         <div class="detail-item">
                                             <span class="detail-label">Admission Date:</span>
-                                            <span class="detail-value"><?php echo isset($student['admission_date']) ? date('M d, Y', strtotime($student['admission_date'])) : 'N/A'; ?></span>
+                                            <span class="detail-value"><?php echo isset($student['admission_date']) && $student['admission_date'] ? date('M d, Y', strtotime($student['admission_date'])) : ''; ?></span>
                                         </div>
                                         <div class="detail-item">
                                             <span class="detail-label">Status:</span>
                                             <span class="detail-value"><?php echo htmlspecialchars($student['status'] ?? 'Active'); ?></span>
                                         </div>
+                                    </div>
+                                    <div style="margin-top: 1.2rem; text-align: right;">
+                                        <a href="student_info.php?student_id=<?php echo urlencode($student['id'] ?? ''); ?>" class="btn btn-primary">View Info</a>
                                     </div>
                                 </div>
                             </div>
@@ -1085,155 +1256,975 @@ try {
         <div class="card" id="permissions">
             <div class="card-header">
                 <h2><i class="fas fa-clipboard-list"></i> Permission Requests</h2>
-                <a href="#" data-toggle="modal" data-target="#newRequestModal">New Request</a>
             </div>
             <div class="card-body">
-                <!-- New Permission Request Form -->
-                <form method="POST" class="card" style="padding: 1.5rem; margin-bottom: 2rem;">
-                    <h3><i class="fas fa-plus-circle"></i> New Permission Request</h3>
-                    <div class="form-group">
-                        <label for="request_type">Request Type</label>
-                        <select name="request_type" id="request_type" required>
-                            <option value="">-- Select Type --</option>
-                            <option value="leave">Leave of Absence</option>
-                            <option value="medical">Medical Appointment</option>
-                            <option value="event">School Event</option>
-                            <option value="other">Other</option>
-                        </select>
+                <!-- Two-Column Layout: Permission Form and Recent Requests -->
+                <div class="permission-layout">
+                    <!-- Left Column: Permission Request Form -->
+                    <div class="permission-form-column">
+                        <div class="permission-form-wrapper">
+                            <div class="form-header-section">
+                                <div class="header-icon-container">
+                                    <div class="header-icon">
+                                        <i class="fas fa-file-alt"></i>
+                                    </div>
+                                    <div class="icon-glow"></div>
+                                </div>
+                                <div class="header-content">
+                                    <h3>Permission Request</h3>
+                                    <p>Submit a formal request for your child's absence or special permission</p>
+                                </div>
+                            </div>
+                            
+                            <form method="POST" class="modern-permission-form" id="permissionForm">
+                                <div class="form-sections">
+                                    <!-- Section 1: Basic Information -->
+                                    <div class="form-section">
+                                        <div class="section-header">
+                                            <div class="section-number">1</div>
+                                            <h4>Basic Information</h4>
+                                        </div>
+                                        
+                                        <div class="form-row">
+                                            <div class="form-field">
+                                                <label for="request_type" class="field-label">
+                                                    <i class="fas fa-tag"></i>
+                                                    Request Type
+                                                </label>
+                                                <div class="select-wrapper">
+                                                    <select name="request_type" id="request_type" class="modern-select" required>
+                                                        <option value="" disabled selected>Choose request type</option>
+                                                        <option value="leave">🏠 Leave of Absence</option>
+                                                        <option value="medical">🏥 Medical Appointment</option>
+                                                        <option value="event">🎉 School Event</option>
+                                                        <option value="other">📝 Other</option>
+                                                    </select>
+                                                    <div class="select-arrow">
+                                                        <i class="fas fa-chevron-down"></i>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="form-field">
+                                                <label for="student_select" class="field-label">
+                                                    <i class="fas fa-user-graduate"></i>
+                                                    Select Child
+                                                </label>
+                                                <div class="select-wrapper">
+                                                    <select name="student_select" id="student_select" class="modern-select" required>
+                                                        <option value="" disabled selected>Choose your child</option>
+                                                        <?php if (!empty($children)): ?>
+                                                            <?php foreach ($children as $student): ?>
+                                                                <option value="<?php echo $student['id']; ?>">
+                                                                    <?php echo htmlspecialchars(isset($student['name']) ? $student['name'] : (isset($student['first_name']) ? $student['first_name'] . ' ' . $student['last_name'] : 'N/A')); ?>
+                                                                </option>
+                                                            <?php endforeach; ?>
+                                                        <?php else: ?>
+                                                            <option value="">No children associated</option>
+                                                        <?php endif; ?>
+                                                    </select>
+                                                    <div class="select-arrow">
+                                                        <i class="fas fa-chevron-down"></i>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Section 2: Time Details -->
+                                    <div class="form-section">
+                                        <div class="section-header">
+                                            <div class="section-number">2</div>
+                                            <h4>Time Details</h4>
+                                        </div>
+                                        
+                                        <div class="form-row">
+                                            <div class="form-field">
+                                                <label for="start_date" class="field-label">
+                                                    <i class="fas fa-calendar-plus"></i>
+                                                    Start Date & Time
+                                                </label>
+                                                <div class="input-wrapper">
+                                                    <input type="datetime-local" name="start_date" id="start_date" class="modern-input" required>
+                                                    <div class="input-icon">
+                                                        <i class="fas fa-clock"></i>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="form-field">
+                                                <label for="end_date" class="field-label">
+                                                    <i class="fas fa-calendar-minus"></i>
+                                                    End Date & Time
+                                                </label>
+                                                <div class="input-wrapper">
+                                                    <input type="datetime-local" name="end_date" id="end_date" class="modern-input" required>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Section 3: Request Details -->
+                                    <div class="form-section">
+                                        <div class="section-header">
+                                            <div class="section-number">3</div>
+                                            <h4>Request Details</h4>
+                                        </div>
+                                        
+                                        <div class="form-field full-width">
+                                            <label for="request_text" class="field-label">
+                                                <i class="fas fa-align-left"></i>
+                                                Detailed Description
+                                            </label>
+                                            <div class="textarea-wrapper">
+                                                <textarea name="request_text" id="request_text" class="modern-textarea" rows="5" required placeholder="Please provide a detailed explanation of your request........"></textarea>
+                                            </div>
+                                            <div class="field-hint">
+                                                <i class="fas fa-lightbulb"></i>
+                                                Be specific and include any supporting details that may help with approval
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Submit Section -->
+                                <div class="submit-section">
+                                    <button type="submit" name="permission_request" class="submit-button">
+                                        <div class="button-content">
+                                            <i class="fas fa-paper-plane"></i>
+                                            <span>Submit Permission Request</span>
+                                        </div>
+                                        <div class="button-glow"></div>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="student_select">Select Child</label>
-                        <select name="student_select" id="student_select">
-                            <?php if (!empty($children)): ?>
-                                <?php foreach ($children as $student): ?>
-                                    <option value="<?php echo $student['id']; ?>">
-                                        <?php echo htmlspecialchars(isset($student['name']) ? $student['name'] : (isset($student['first_name']) ? $student['first_name'] . ' ' . $student['last_name'] : 'N/A')); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <option value="">No children associated</option>
-                            <?php endif; ?>
-                        </select>
+                    <!-- Right Column: Recent Requests Card -->
+                    <div class="recent-requests-column">
+                        <div class="recent-requests-card">
+                            <div class="recent-header">
+                                <div class="recent-icon">
+                                    <i class="fas fa-history"></i>
+                                </div>
+                                <div class="recent-title">
+                                    <h3>Recent Requests</h3>
+                                    <p>Your latest permission requests</p>
+                                </div>
+                            </div>
+                            
+                            <div class="recent-content">
+                                <?php if (!empty($requests)): ?>
+                                    <div class="recent-requests-list">
+                                        <?php 
+                                        $recentCount = 0;
+                                        foreach ($requests as $request): 
+                                            if ($recentCount >= 5) break; // Show only 5 most recent
+                                        ?>
+                                            <div class="recent-request-item">
+                                                <div class="request-header">
+                                                    <div class="request-type-badge">
+                                                        <?php 
+                                                        $type = $request['request_type'] ?? 'other';
+                                                        switch($type) {
+                                                            case 'leave': echo '🏠'; break;
+                                                            case 'medical': echo '🏥'; break;
+                                                            case 'event': echo '🎉'; break;
+                                                            default: echo '📝'; break;
+                                                        }
+                                                        ?>
+                                                    </div>
+                                                    <div class="request-status">
+                                                        <?php 
+                                                        $status = $request['status'] ?? 'pending';
+                                                        $statusClass = 'status-' . $status;
+                                                        $statusIcon = '';
+                                                        switch($status) {
+                                                            case 'pending': $statusIcon = '⏳'; break;
+                                                            case 'approved': $statusIcon = '✅'; break;
+                                                            case 'rejected': $statusIcon = '❌'; break;
+                                                        }
+                                                        ?>
+                                                        <span class="status-badge <?php echo $statusClass; ?>">
+                                                            <?php echo $statusIcon; ?> <?php echo ucfirst($status); ?>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="request-content">
+                                                    <div class="request-text">
+                                                        <?php 
+                                                        $text = $request['request_text'] ?? $request['reason'] ?? 'No description';
+                                                        echo htmlspecialchars(substr($text, 0, 80)) . (strlen($text) > 80 ? '...' : '');
+                                                        ?>
+                                                    </div>
+                                                    <div class="request-date">
+                                                        <i class="fas fa-calendar-alt"></i>
+                                                        <?php echo date('M d, Y', strtotime($request['created_at'])); ?>
+                                                    </div>
+                                                </div>
+                                                
+                                                <?php if (isset($request['response_comment']) && !empty($request['response_comment'])): ?>
+                                                    <div class="request-response">
+                                                        <i class="fas fa-comment"></i>
+                                                        <span><?php echo htmlspecialchars(substr($request['response_comment'], 0, 60)) . (strlen($request['response_comment']) > 60 ? '...' : ''); ?></span>
+                                                    </div>
+                                                <?php endif; ?>
+                                            </div>
+                                        <?php 
+                                        $recentCount++;
+                                        endforeach; 
+                                        ?>
+                                    </div>
+                                    
+                                    <?php if (count($requests) > 5): ?>
+                                        <div class="view-all-section">
+                                            <a href="#" class="view-all-link">
+                                                <i class="fas fa-eye"></i>
+                                                View All Requests
+                                            </a>
+                                        </div>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <div class="no-requests">
+                                        <div class="no-requests-icon">
+                                            <i class="fas fa-inbox"></i>
+                                        </div>
+                                        <h4>No Requests Yet</h4>
+                                        <p>You haven't submitted any permission requests yet.</p>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="start_date">Start Date</label>
-                        <input type="datetime-local" name="start_date" id="start_date" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="end_date">End Date</label>
-                        <input type="datetime-local" name="end_date" id="end_date" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="request_text">Permission Request Details</label>
-                        <textarea name="request_text" id="request_text" required></textarea>
-                    </div>
-                    
-                    <button type="submit" name="permission_request" class="btn">Submit Request</button>
-                </form>
+                </div>
+                <style>
+                /* Modern Permission Request Form Styles */
+                .permission-request-container {
+                    max-width: 1000px;
+                    margin: 0 auto;
+                }
                 
-                <!-- Previous Requests Table -->
-                <h3><i class="fas fa-history"></i> Your Previous Requests</h3>
-                <?php if (empty($requests)): ?>
-                    <div class="alert alert-warning">
-                        <p>You haven't made any permission requests yet.</p>
-                    </div>
-                <?php else: ?>
-                    <div class="table-responsive">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Student</th>
-                                    <th>Request</th>
-                                    <th>Duration</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($requests as $request): ?>
-                                    <tr>
-                                        <td><?php echo date('M d, Y', strtotime($request['created_at'])); ?></td>
-                                        <td>
-                                            <?php if (isset($request['student_name']) && !empty($request['student_name'])): ?>
-                                                <?php echo htmlspecialchars($request['student_name']); ?>
-                                                <br><small><?php echo htmlspecialchars($request['student_id']); ?></small>
-                                            <?php else: ?>
-                                                N/A
-                                            <?php endif; ?>
-                                        </td>
-                                        <td><?php echo htmlspecialchars($request['request_text']); ?></td>
-                                        <td>
-                                            <?php if (isset($request['start_date']) && isset($request['end_date'])): ?>
-                                                <?php echo date('M d, Y', strtotime($request['start_date'])); ?> to
-                                                <?php echo date('M d, Y', strtotime($request['end_date'])); ?>
-                                            <?php else: ?>
-                                                N/A
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <?php
-                                                $status = strtolower($request['status']);
-                                                $badgeClass = 'status-badge status-' . $status . ' popover-status';
-                                                $comment = isset($request['response_comment']) ? $request['response_comment'] : '';
-                                                $tooltip = '';
-                                                if ($status === 'pending') {
-                                                    $tooltip = 'Wait for the admin to react';
-                                                } elseif ($status === 'approved' || $status === 'rejected') {
-                                                    // Only show tooltip if comment is not null and not empty after trim
-                                                    if (!is_null($comment) && trim($comment) !== '') {
-                                                        $tooltip = trim($comment);
-                                                    } else {
-                                                        $tooltip = '';
-                                                    }
-                                                } else {
-                                                    $tooltip = ucfirst($status);
-                                                }
-                                            ?>
-                                            <?php if ($tooltip !== ''): ?>
-                                                <span class="<?php echo $badgeClass; ?>" data-tooltip="<?php echo htmlspecialchars($tooltip, ENT_QUOTES); ?>">
-                                                    <?php echo ucfirst($request['status']); ?>
-                                                </span>
-                                            <?php else: ?>
-                                                <span class="<?php echo $badgeClass; ?>">
-                                                    <?php echo ucfirst($request['status']); ?>
-                                                </span>
-                                            <?php endif; ?>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php endif; ?>
+                .permission-form-wrapper {
+                    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+                    border-radius: 24px;
+                    box-shadow: 
+                        0 20px 60px rgba(0, 112, 74, 0.08),
+                        0 8px 20px rgba(0, 112, 74, 0.06),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+                    border: 1px solid rgba(0, 112, 74, 0.08);
+                    overflow: hidden;
+                    position: relative;
+                }
+                
+                .permission-form-wrapper::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    height: 4px;
+                    background: linear-gradient(90deg, #00704A, #27ae60, #2ecc71);
+                    z-index: 1;
+                }
+                
+                .form-header-section {
+                    background: linear-gradient(135deg, #f0f9f6 0%, #e8f5f0 100%);
+                    padding: 2.5rem 2rem 2rem;
+                    text-align: center;
+                    position: relative;
+                    overflow: hidden;
+                }
+                
+                .form-header-section::before {
+                    content: '';
+                    position: absolute;
+                    top: -50%;
+                    left: -50%;
+                    width: 200%;
+                    height: 200%;
+                    background: radial-gradient(circle, rgba(39, 174, 96, 0.03) 0%, transparent 70%);
+                    animation: float 6s ease-in-out infinite;
+                }
+                
+                @keyframes float {
+                    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+                    33% { transform: translate(30px, -30px) rotate(120deg); }
+                    66% { transform: translate(-20px, 20px) rotate(240deg); }
+                }
+                
+                .header-icon-container {
+                    position: relative;
+                    display: inline-block;
+                    margin-bottom: 1.5rem;
+                }
+                
+                .header-icon {
+                    width: 80px;
+                    height: 80px;
+                    background: linear-gradient(135deg, #00704A 0%, #27ae60 50%, #2ecc71 100%);
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 2.5rem;
+                    color: white;
+                    position: relative;
+                    z-index: 2;
+                    box-shadow: 
+                        0 8px 32px rgba(0, 112, 74, 0.3),
+                        0 4px 16px rgba(0, 112, 74, 0.2);
+                    animation: pulse 2s ease-in-out infinite;
+                }
+                
+                @keyframes pulse {
+                    0%, 100% { transform: scale(1); }
+                    50% { transform: scale(1.05); }
+                }
+                
+                .icon-glow {
+                    position: absolute;
+                    top: -10px;
+                    left: -10px;
+                    right: -10px;
+                    bottom: -10px;
+                    background: radial-gradient(circle, rgba(39, 174, 96, 0.2) 0%, transparent 70%);
+                    border-radius: 50%;
+                    animation: glow 3s ease-in-out infinite alternate;
+                }
+                
+                @keyframes glow {
+                    0% { opacity: 0.5; transform: scale(1); }
+                    100% { opacity: 1; transform: scale(1.1); }
+                }
+                
+                .header-content h3 {
+                    font-size: 2rem;
+                    font-weight: 700;
+                    color: #1a3c34;
+                    margin: 0 0 0.5rem 0;
+                    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+                }
+                
+                .header-content p {
+                    font-size: 1.1rem;
+                    color: #4a5a5a;
+                    margin: 0;
+                    opacity: 0.9;
+                    line-height: 1.6;
+                }
+                
+                .modern-permission-form {
+                    padding: 2rem;
+                }
+                
+                .form-sections {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 2.5rem;
+                }
+                
+                .form-section {
+                    background: white;
+                    border-radius: 16px;
+                    padding: 2rem;
+                    box-shadow: 
+                        0 4px 20px rgba(0, 0, 0, 0.04),
+                        0 2px 8px rgba(0, 0, 0, 0.02);
+                    border: 1px solid rgba(0, 112, 74, 0.06);
+                    transition: all 0.3s ease;
+                }
+                
+                .form-section:hover {
+                    box-shadow: 
+                        0 8px 30px rgba(0, 0, 0, 0.08),
+                        0 4px 12px rgba(0, 0, 0, 0.04);
+                    transform: translateY(-2px);
+                }
+                
+                .section-header {
+                    display: flex;
+                    align-items: center;
+                    gap: 1rem;
+                    margin-bottom: 2rem;
+                    padding-bottom: 1rem;
+                    border-bottom: 2px solid #f0f9f6;
+                }
+                
+                .section-number {
+                    width: 40px;
+                    height: 40px;
+                    background: linear-gradient(135deg, #00704A, #27ae60);
+                    color: white;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: 700;
+                    font-size: 1.2rem;
+                    box-shadow: 0 4px 12px rgba(0, 112, 74, 0.2);
+                }
+                
+                .section-header h4 {
+                    font-size: 1.4rem;
+                    font-weight: 600;
+                    color: #1a3c34;
+                    margin: 0;
+                }
+                
+                .section-header p {
+                    font-size: 1rem;
+                    color: #6b7280;
+                    margin: 0;
+                    opacity: 0.8;
+                }
+                
+                .form-row {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 2rem;
+                }
+                
+                .form-field {
+                    position: relative;
+                }
+                
+                .form-field.full-width {
+                    grid-column: 1 / -1;
+                }
+                
+                .field-label {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    font-weight: 600;
+                    color: #1a3c34;
+                    margin-bottom: 0.75rem;
+                    font-size: 1rem;
+                }
+                
+                .field-label i {
+                    color: #00704A;
+                    font-size: 1.1rem;
+                }
+                
+                .select-wrapper,
+                .input-wrapper,
+                .textarea-wrapper {
+                    position: relative;
+                }
+                
+                .modern-select,
+                .modern-input,
+                .modern-textarea {
+                    width: 100%;
+                    padding: 1rem 1.2rem;
+                    border: 2px solid #e5e7eb;
+                    border-radius: 12px;
+                    font-size: 1rem;
+                    background: #fafbfc;
+                    transition: all 0.3s ease;
+                    color: #374151;
+                }
+                
+                .modern-select:focus,
+                .modern-input:focus,
+                .modern-textarea:focus {
+                    outline: none;
+                    border-color: #00704A;
+                    background: white;
+                    box-shadow: 
+                        0 0 0 4px rgba(0, 112, 74, 0.1),
+                        0 4px 12px rgba(0, 112, 74, 0.1);
+                }
+                
+                .modern-textarea {
+                    min-height: 120px;
+                    resize: vertical;
+                    line-height: 1.6;
+                }
+                
+                .select-arrow {
+                    position: absolute;
+                    right: 1rem;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    color: #00704A;
+                    pointer-events: none;
+                    transition: transform 0.3s ease;
+                }
+                
+                .select-wrapper:focus-within .select-arrow {
+                    transform: translateY(-50%) rotate(180deg);
+                }
+                
+                .input-icon,
+                .textarea-icon {
+                    position: absolute;
+                    right: 1rem;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    color: #9ca3af;
+                    pointer-events: none;
+                    transition: color 0.3s ease;
+                }
+                
+                .textarea-icon {
+                    top: 1.5rem;
+                    transform: none;
+                }
+                
+                .modern-input:focus + .input-icon,
+                .modern-textarea:focus + .textarea-icon {
+                    color: #00704A;
+                }
+                
+                .field-hint {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    margin-top: 0.5rem;
+                    font-size: 0.9rem;
+                    color: #6b7280;
+                    opacity: 0.8;
+                }
+                
+                .field-hint i {
+                    color: #f59e0b;
+                }
+                
+                .submit-section {
+                    background: linear-gradient(135deg, #f0f9f6 0%, #e8f5f0 100%);
+                    border-radius: 16px;
+                    padding: 2rem;
+                    margin-top: 2rem;
+                    text-align: center;
+                }
+                
+                .submit-info {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 1rem;
+                    margin-bottom: 2rem;
+                    padding: 1rem 1.5rem;
+                    background: rgba(255, 255, 255, 0.8);
+                    border-radius: 12px;
+                    border: 1px solid rgba(0, 112, 74, 0.1);
+                }
+                
+                .info-icon {
+                    color: #00704A;
+                    font-size: 1.2rem;
+                }
+                
+                .info-text {
+                    color: #374151;
+                    font-size: 0.95rem;
+                    line-height: 1.5;
+                }
+                
+                .submit-button {
+                    position: relative;
+                    background: linear-gradient(135deg, #00704A 0%, #27ae60 50%, #2ecc71 100%);
+                    color: white;
+                    border: none;
+                    padding: 1.2rem 3rem;
+                    border-radius: 12px;
+                    font-size: 1.1rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    overflow: hidden;
+                    transition: all 0.3s ease;
+                    box-shadow: 
+                        0 8px 25px rgba(0, 112, 74, 0.3),
+                        0 4px 12px rgba(0, 112, 74, 0.2);
+                }
+                
+                .submit-button:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 
+                        0 12px 35px rgba(0, 112, 74, 0.4),
+                        0 6px 16px rgba(0, 112, 74, 0.3);
+                }
+                
+                .submit-button:active {
+                    transform: translateY(0);
+                }
+                
+                .button-content {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 0.75rem;
+                    position: relative;
+                    z-index: 2;
+                }
+                
+                .button-glow {
+                    position: absolute;
+                    top: -50%;
+                    left: -50%;
+                    width: 200%;
+                    height: 200%;
+                    background: linear-gradient(
+                        45deg,
+                        transparent,
+                        rgba(255, 255, 255, 0.1),
+                        transparent
+                    );
+                    transform: rotate(45deg);
+                    animation: shine 3s infinite;
+                }
+                
+                @keyframes shine {
+                    0% { transform: translateX(-100%) rotate(45deg); }
+                    100% { transform: translateX(100%) rotate(45deg); }
+                }
+                
+                /* Responsive Design */
+                @media (max-width: 768px) {
+                    .permission-form-wrapper {
+                        margin: 0 1rem;
+                    }
+                    
+                    .form-header-section {
+                        padding: 2rem 1.5rem 1.5rem;
+                    }
+                    
+                    .header-icon {
+                        width: 60px;
+                        height: 60px;
+                        font-size: 2rem;
+                    }
+                    
+                    .header-content h3 {
+                        font-size: 1.5rem;
+                    }
+                    
+                    .modern-permission-form {
+                        padding: 1.5rem;
+                    }
+                    
+                    .form-section {
+                        padding: 1.5rem;
+                    }
+                    
+                    .form-row {
+                        grid-template-columns: 1fr;
+                        gap: 1.5rem;
+                    }
+                    
+                    .submit-section {
+                        padding: 1.5rem;
+                    }
+                    
+                    .submit-info {
+                        flex-direction: column;
+                        text-align: center;
+                        gap: 0.5rem;
+                    }
+                }
+                
+                /* Animation for form appearance */
+                @keyframes formAppear {
+                    0% {
+                        opacity: 0;
+                        transform: translateY(30px);
+                    }
+                    100% {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+                
+                .permission-form-wrapper {
+                    animation: formAppear 0.6s ease-out;
+                }
+                
+                /* Two-Column Layout Styles */
+                .permission-layout {
+                    display: grid;
+                    grid-template-columns: 2fr 1fr;
+                    gap: 2rem;
+                    max-width: 1400px;
+                    margin: 0 auto;
+                }
+                
+                .permission-form-column {
+                    min-width: 0;
+                }
+                
+                .recent-requests-column {
+                    min-width: 0;
+                }
+                
+                /* Recent Requests Card Styles */
+                .recent-requests-card {
+                    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+                    border-radius: 20px;
+                    box-shadow: 
+                        0 15px 40px rgba(0, 112, 74, 0.08),
+                        0 6px 15px rgba(0, 112, 74, 0.06),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+                    border: 1px solid rgba(0, 112, 74, 0.08);
+                    overflow: hidden;
+                    position: relative;
+                    height: fit-content;
+                    min-height: 500px;
+                    max-height: 800px;
+                    overflow-y: auto;
+                }
+                
+                .recent-requests-card::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    height: 4px;
+                    background: linear-gradient(90deg, #00704A, #27ae60, #2ecc71);
+                    z-index: 1;
+                }
+                
+                .recent-header {
+                    background: linear-gradient(135deg, #f0f9f6 0%, #e8f5f0 100%);
+                    padding: 1.5rem;
+                    text-align: center;
+                    position: relative;
+                    overflow: hidden;
+                }
+                
+                .recent-header::before {
+                    content: '';
+                    position: absolute;
+                    top: -50%;
+                    left: -50%;
+                    width: 200%;
+                    height: 200%;
+                    background: radial-gradient(circle, rgba(39, 174, 96, 0.03) 0%, transparent 70%);
+                    animation: float 6s ease-in-out infinite;
+                }
+                
+                .recent-icon {
+                    width: 50px;
+                    height: 50px;
+                    background: linear-gradient(135deg, #00704A 0%, #27ae60 50%, #2ecc71 100%);
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 1.5rem;
+                    color: white;
+                    margin: 0 auto 1rem;
+                    position: relative;
+                    z-index: 2;
+                    box-shadow: 
+                        0 6px 20px rgba(0, 112, 74, 0.3),
+                        0 3px 10px rgba(0, 112, 74, 0.2);
+                }
+                
+                .recent-title h3 {
+                    font-size: 1.3rem;
+                    font-weight: 700;
+                    color: #1a3c34;
+                    margin: 0 0 0.3rem 0;
+                    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+                }
+                
+                .recent-title p {
+                    font-size: 0.9rem;
+                    color: #4a5a5a;
+                    margin: 0;
+                    opacity: 0.9;
+                }
+                
+                .recent-content {
+                    padding: 1.5rem;
+                }
+                
+                .recent-requests-list {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1rem;
+                }
+                
+                .recent-request-item {
+                    background: white;
+                    border-radius: 12px;
+                    padding: 1rem;
+                    box-shadow: 
+                        0 2px 8px rgba(0, 0, 0, 0.04),
+                        0 1px 3px rgba(0, 0, 0, 0.02);
+                    border: 1px solid rgba(0, 112, 74, 0.06);
+                    transition: all 0.3s ease;
+                }
+                
+                .recent-request-item:hover {
+                    box-shadow: 
+                        0 4px 12px rgba(0, 0, 0, 0.08),
+                        0 2px 6px rgba(0, 0, 0, 0.04);
+                    transform: translateY(-2px);
+                }
+                
+                .request-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 0.8rem;
+                }
+                
+                .request-type-badge {
+                    font-size: 1.2rem;
+                    opacity: 0.8;
+                }
+                
+                .request-status {
+                    flex-shrink: 0;
+                }
+                
+                .request-content {
+                    margin-bottom: 0.8rem;
+                }
+                
+                .request-text {
+                    font-size: 0.9rem;
+                    color: #374151;
+                    line-height: 1.4;
+                    margin-bottom: 0.5rem;
+                }
+                
+                .request-date {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.3rem;
+                    font-size: 0.8rem;
+                    color: #6b7280;
+                }
+                
+                .request-date i {
+                    font-size: 0.7rem;
+                }
+                
+                .request-response {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 0.5rem;
+                    padding: 0.5rem;
+                    background: rgba(0, 112, 74, 0.05);
+                    border-radius: 8px;
+                    border-left: 3px solid #00704A;
+                    font-size: 0.8rem;
+                    color: #374151;
+                    line-height: 1.3;
+                }
+                
+                .request-response i {
+                    color: #00704A;
+                    margin-top: 0.1rem;
+                    flex-shrink: 0;
+                }
+                
+                .view-all-section {
+                    text-align: center;
+                    margin-top: 1.5rem;
+                    padding-top: 1rem;
+                    border-top: 1px solid rgba(0, 112, 74, 0.1);
+                }
+                
+                .view-all-link {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    color: #00704A;
+                    text-decoration: none;
+                    font-weight: 600;
+                    font-size: 0.9rem;
+                    padding: 0.5rem 1rem;
+                    border-radius: 8px;
+                    transition: all 0.3s ease;
+                    background: rgba(0, 112, 74, 0.05);
+                }
+                
+                .view-all-link:hover {
+                    background: rgba(0, 112, 74, 0.1);
+                    transform: translateY(-1px);
+                    text-decoration: none;
+                    color: #00704A;
+                }
+                
+                .no-requests {
+                    text-align: center;
+                    padding: 2rem 1rem;
+                    color: #6b7280;
+                }
+                
+                .no-requests-icon {
+                    font-size: 3rem;
+                    color: #d1d5db;
+                    margin-bottom: 1rem;
+                }
+                
+                .no-requests h4 {
+                    font-size: 1.1rem;
+                    font-weight: 600;
+                    color: #374151;
+                    margin: 0 0 0.5rem 0;
+                }
+                
+                .no-requests p {
+                    font-size: 0.9rem;
+                    margin: 0;
+                    opacity: 0.8;
+                }
+                
+                /* Responsive Design for Two-Column Layout */
+                @media (max-width: 1024px) {
+                    .permission-layout {
+                        grid-template-columns: 1fr;
+                        gap: 1.5rem;
+                    }
+                    
+                    .recent-requests-card {
+                        max-height: none;
+                        order: -1;
+                    }
+                }
+                
+                @media (max-width: 768px) {
+                    .permission-layout {
+                        margin: 0 1rem;
+                    }
+                    
+                    .recent-header {
+                        padding: 1rem;
+                    }
+                    
+                    .recent-icon {
+                        width: 40px;
+                        height: 40px;
+                        font-size: 1.2rem;
+                    }
+                    
+                    .recent-title h3 {
+                        font-size: 1.1rem;
+                    }
+                    
+                    .recent-content {
+                        padding: 1rem;
+                    }
+                    
+                    .recent-request-item {
+                        padding: 0.8rem;
+                    }
+                }
+                </style>
+                <!-- Previous Requests Table has been removed as requested. -->
             </div>
         </div>
         
-        <!-- Fee Information Section -->
-        <div class="card" id="fees">
-            <div class="card-header">
-                <h2><i class="fas fa-money-bill-wave"></i> Fee Information</h2>
-            </div>
-            <div class="card-body">
-                <div class="alert alert-info">
-                    <p>Fee information will be available soon. Please check back later.</p>
-                </div>
-            </div>
-        </div>
-          <!-- Academic Progress Section -->
-        <div class="card" id="academics">
-            <div class="card-header">
-                <h2><i class="fas fa-chart-line"></i> Academic Progress</h2>
-            </div>
-            <div class="card-body">
-                <div class="alert alert-info">
-                    <p>Academic progress information will be available soon. Please check back later.</p>
-                </div>
-            </div>
-        </div>
+        
 
         <!-- Feedback Section -->
         <div class="card" id="feedback">
@@ -1449,6 +2440,261 @@ try {
             document.getElementById('sentimentModal').style.display = 'none';
         }
         
+        // Permission request form validation and real-time updates
+        document.addEventListener('DOMContentLoaded', function() {
+            const permissionForm = document.querySelector('form[name="permission_request"]') || 
+                                 document.querySelector('form[method="POST"]');
+            
+            // Real-time status update checker
+            function checkForStatusUpdates() {
+                // Get all permission request IDs from the table
+                const requestRows = document.querySelectorAll('tbody tr');
+                const requestIds = [];
+                
+                requestRows.forEach(row => {
+                    const statusBadge = row.querySelector('.status-badge');
+                    if (statusBadge && statusBadge.classList.contains('status-pending')) {
+                        // Extract request ID from the row
+                        const requestId = row.getAttribute('data-request-id');
+                        if (requestId) {
+                            requestIds.push(requestId);
+                        }
+                    }
+                });
+                
+                if (requestIds.length > 0) {
+                    console.log('Checking for updates on requests:', requestIds);
+                    
+                    // Check for updates
+                    fetch('check_permission_updates.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({
+                            request_ids: requestIds
+                        })
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Update check response:', data);
+                        if (data.success && data.updates && data.updates.length > 0) {
+                            console.log('Found updates:', data.updates);
+                            data.updates.forEach(update => {
+                                updateRequestStatus(update);
+                            });
+                            
+                            // Show notification
+                            showNotification('Some of your permission requests have been updated!', 'success');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Status check failed:', error);
+                    });
+                }
+            }
+            
+            // Update request status in the UI
+            function updateRequestStatus(update) {
+                const row = document.querySelector(`tr[data-request-id="${update.id}"]`);
+                if (row) {
+                    const statusCell = row.querySelector('td:last-child');
+                    const statusBadge = statusCell.querySelector('.status-badge');
+                    
+                    if (statusBadge) {
+                        // Update status badge
+                        statusBadge.className = `status-badge status-${update.status} popover-status`;
+                        
+                        // Update status icon and text
+                        let statusIcon = '';
+                        let statusText = update.status.charAt(0).toUpperCase() + update.status.slice(1);
+                        
+                        switch (update.status) {
+                            case 'pending':
+                                statusIcon = '<i class="fas fa-clock"></i> ';
+                                break;
+                            case 'approved':
+                                statusIcon = '<i class="fas fa-check-circle"></i> ';
+                                break;
+                            case 'rejected':
+                                statusIcon = '<i class="fas fa-times-circle"></i> ';
+                                break;
+                        }
+                        
+                        statusBadge.innerHTML = statusIcon + statusText;
+                        
+                        // Update tooltip
+                        let tooltip = '';
+                        if (update.status === 'pending') {
+                            tooltip = "⏳ **PENDING**\n\nYour request is currently under review by the school administration.\n\nPlease wait for a response.";
+                        } else if (update.status === 'approved') {
+                            tooltip = update.response_comment ? 
+                                "✅ **APPROVED**\n\n**Admin Response:**\n" + update.response_comment :
+                                "✅ **APPROVED**\n\nYour request has been approved!";
+                        } else if (update.status === 'rejected') {
+                            tooltip = update.response_comment ? 
+                                "❌ **REJECTED**\n\n**Admin Response:**\n" + update.response_comment :
+                                "❌ **REJECTED**\n\nYour request has been rejected.";
+                        }
+                        
+                        statusBadge.setAttribute('data-tooltip', tooltip);
+                        
+                        // Add info icon if there's a response comment
+                        if (update.response_comment && (update.status === 'approved' || update.status === 'rejected')) {
+                            statusBadge.innerHTML += '<i class="fas fa-info-circle" style="margin-left: 5px; font-size: 0.8em; opacity: 0.7;"></i>';
+                        }
+                        
+                        // Add animation
+                        statusBadge.style.animation = 'statusUpdate 0.5s ease-in-out';
+                        setTimeout(() => {
+                            statusBadge.style.animation = '';
+                        }, 500);
+                    }
+                }
+            }
+            
+            // Show notification function
+            function showNotification(message, type = 'success') {
+                const notification = document.createElement('div');
+                notification.className = `alert alert-${type}`;
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    z-index: 10000;
+                    padding: 15px 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    animation: slideInRight 0.3s ease-out;
+                `;
+                notification.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${message}`;
+                
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.style.animation = 'slideOutRight 0.3s ease-in';
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.parentNode.removeChild(notification);
+                        }
+                    }, 300);
+                }, 5000);
+            }
+            
+            // Start checking for updates if there are pending requests
+            const pendingRequests = document.querySelectorAll('.status-badge.status-pending');
+            if (pendingRequests.length > 0) {
+                // Check immediately
+                setTimeout(checkForStatusUpdates, 1000);
+                
+                // Then check every 30 seconds
+                setInterval(checkForStatusUpdates, 30000);
+            }
+            
+            // Manual refresh button
+            const refreshButton = document.getElementById('refreshRequests');
+            if (refreshButton) {
+                refreshButton.addEventListener('click', function() {
+                    // Add loading state
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+                    this.disabled = true;
+                    
+                    // Reload the page after a short delay
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 500);
+                });
+            }
+            
+            if (permissionForm) {
+                permissionForm.addEventListener('submit', function(e) {
+                    const requestType = document.getElementById('request_type');
+                    const studentSelect = document.getElementById('student_select');
+                    const startDate = document.getElementById('start_date');
+                    const endDate = document.getElementById('end_date');
+                    const requestText = document.getElementById('request_text');
+                    
+                    let isValid = true;
+                    
+                    // Clear previous error states
+                    [requestType, studentSelect, startDate, endDate, requestText].forEach(field => {
+                        if (field) {
+                            field.style.borderColor = '';
+                            field.classList.remove('error');
+                        }
+                    });
+                    
+                    // Validate request type
+                    if (!requestType.value) {
+                        requestType.style.borderColor = '#dc3545';
+                        requestType.classList.add('error');
+                        isValid = false;
+                    }
+                    
+                    // Validate student selection
+                    if (!studentSelect.value) {
+                        studentSelect.style.borderColor = '#dc3545';
+                        studentSelect.classList.add('error');
+                        isValid = false;
+                    }
+                    
+                    // Validate dates
+                    if (!startDate.value) {
+                        startDate.style.borderColor = '#dc3545';
+                        startDate.classList.add('error');
+                        isValid = false;
+                    }
+                    
+                    if (!endDate.value) {
+                        endDate.style.borderColor = '#dc3545';
+                        endDate.classList.add('error');
+                        isValid = false;
+                    }
+                    
+                    // Validate that end date is after start date
+                    if (startDate.value && endDate.value && new Date(endDate.value) <= new Date(startDate.value)) {
+                        endDate.style.borderColor = '#dc3545';
+                        endDate.classList.add('error');
+                        alert('End date must be after start date');
+                        isValid = false;
+                    }
+                    
+                    // Validate request text
+                    if (!requestText.value.trim()) {
+                        requestText.style.borderColor = '#dc3545';
+                        requestText.classList.add('error');
+                        isValid = false;
+                    }
+                    
+                    if (!isValid) {
+                        e.preventDefault();
+                        alert('Please fill in all required fields correctly.');
+                    }
+                });
+            }
+            
+            // Auto-set end date to start date + 1 day if not set
+            const startDateInput = document.getElementById('start_date');
+            const endDateInput = document.getElementById('end_date');
+            
+            if (startDateInput && endDateInput) {
+                startDateInput.addEventListener('change', function() {
+                    if (this.value && !endDateInput.value) {
+                        const startDate = new Date(this.value);
+                        startDate.setDate(startDate.getDate() + 1);
+                        endDateInput.value = startDate.toISOString().slice(0, 16);
+                    }
+                });
+            }
+        });
+        
         // Function to show sentiment analysis results
         function showSentimentResults(sentimentLabel, sentimentScore, suggestion) {
             const modal = document.getElementById('sentimentModal');
@@ -1489,4 +2735,4 @@ try {
         });
     </script>
 </body>
-</html>
+</html></html>

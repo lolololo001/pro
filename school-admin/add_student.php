@@ -289,31 +289,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $school_info = $school_result->fetch_assoc();
             $school_stmt->close();
 
-            // Send student credentials via Email API if parent email is provided and valid
-            if (!empty($parent_email) && filter_var($parent_email, FILTER_VALIDATE_EMAIL)) {
+            // --- EMAIL SENDING BLOCK ---
+            $email_error_message = '';
+            if (!empty($parent_email)) {
+                require_once __DIR__ . '/../vendor/autoload.php';
+                $mail = new PHPMailer(true);
                 try {
-                    $email_api_url = 'https://your-email-api-endpoint.example/send'; // Replace with your Email API URL
-                    $email_payload = [
-                        'to' => $parent_email,
-                        'subject' => 'Student Registration Credentials',
-                        'body' => "Dear $parent_name,\n\nYour child $first_name $last_name has been registered.\nRegistration Number: $reg_number\nClass: $class_name\nDepartment: $department_name\n\nThank you for choosing " . ($school_info['name'] ?? 'our school') . "."
-                        // Add more fields as required by your API
-                    ];
-                    $ch = curl_init($email_api_url);
-                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                    curl_setopt($ch, CURLOPT_POST, true);
-                    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-                    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($email_payload));
-                    $api_response = curl_exec($ch);
-                    if (curl_errno($ch)) {
-                        error_log('Email API send error: ' . curl_error($ch));
-                    } else {
-                        error_log('Email API send response: ' . $api_response);
-                    }
-                    curl_close($ch);
+                    $mail->SMTPDebug = 2; // Show full debug output in logs (set to 0 in production)
+                    $mail->isSMTP();
+                    $mail->Host = 'smtp.gmail.com';
+                    $mail->SMTPAuth = true;
+                    $mail->Username = 'schoolcomm001@gmail.com';
+                    $mail->Password = 'nuos orzj keap bszp';
+                    $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+                    $mail->Port = 465;
+                    $mail->addCustomHeader('X-Priority', '1');
+                    $mail->addCustomHeader('X-MSMail-Priority', 'High');
+                    $mail->addCustomHeader('Importance', 'High');
+                    $mail->setFrom('schoolcomm001@gmail.com', $school_info['name'] ?? 'SchoolComm');
+                    $mail->addAddress($parent_email, $parent_name);
+                    $body = "<html><body>"
+                        . "<p><strong>Dear " . htmlspecialchars($parent_name) . ",</strong></p>"
+                        . "<p>Your child <strong>" . htmlspecialchars($first_name . ' ' . $last_name) . "</strong> has been registered at <strong>" . htmlspecialchars($school_info['name'] ?? 'our school') . "</strong>.</p>"
+                        . "<p><strong>Registration Number:</strong> " . htmlspecialchars($reg_number) . "<br>"
+                        . "<strong>Class:</strong> " . htmlspecialchars($class_name) . "<br>"
+                        . (!empty($department_name) ? ("<strong>Department:</strong> " . htmlspecialchars($department_name) . "<br>") : "")
+                        . "</p>"
+                        . "<p>Please keep this registration number for future reference. You can use it to access your child's academic records, make fee payments, communicate with teachers, and track progress.</p>"
+                        . "<p>For any queries, contact us at:<br>"
+                        . "Phone: " . htmlspecialchars($school_info['phone'] ?? 'N/A') . "<br>"
+                        . "Email: " . htmlspecialchars($school_info['email'] ?? 'N/A') . "</p>"
+                        . "<br><p>Regards,<br>" . htmlspecialchars($school_info['name'] ?? 'SchoolComm') . " Team</p>"
+                        . "</body></html>";
+                    $mail->isHTML(true);
+                    $mail->Subject = 'Student Registration Confirmation - ' . $first_name . ' ' . $last_name;
+                    $mail->Body = $body;
+                    $mail->AltBody = strip_tags($body);
+                    $mail->send();
+                    error_log("Registration email sent successfully to: " . $parent_email);
                 } catch (Exception $e) {
-                    error_log('Email API send exception: ' . $e->getMessage());
+                    $email_error_message = "Failed to send registration email: " . $e->getMessage() . " | Info: " . print_r($mail->ErrorInfo, true);
+                    error_log($email_error_message);
                 }
+            }
+            // --- END EMAIL SENDING BLOCK ---
+
+            // If email failed, show error to admin
+            if (!empty($email_error_message)) {
+                $_SESSION['student_error'] = 'Student registered, but email could not be sent to parent. Please check email settings or logs.';
             }
 
             // Send message via external API after successful registration
