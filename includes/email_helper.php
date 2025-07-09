@@ -21,12 +21,12 @@ function sendStudentRegistrationEmail($parent_email, $parent_name, $student_data
         $mail = new PHPMailer(true);
 
         //Server settings
-        $mail->SMTPDebug = 0; // Disable debug output
+        $mail->SMTPDebug = 2; // Enable debug output for troubleshooting
         $mail->isSMTP();
         $mail->Host = 'smtp.gmail.com';
         $mail->SMTPAuth = true;
-        $mail->Username = 'schoolcomm001@gmail.com';
-        $mail->Password = 'nuos orzj keap bszp'; // Use environment variables in production
+        $mail->Username = 'schoolcomm001@gmail.com'; // Must match the Gmail account
+        $mail->Password = 'nuos orzj keap bszp'; // App password provided by user
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
         $mail->Port = 465;
 
@@ -38,6 +38,7 @@ function sendStudentRegistrationEmail($parent_email, $parent_name, $student_data
         //Recipients
         $mail->setFrom('schoolcomm001@gmail.com', $school_info['name'] ?? 'SchoolComm');
         $mail->addAddress($parent_email, $parent_name);
+        $mail->addReplyTo('schoolcomm001@gmail.com', $school_info['name'] ?? 'SchoolComm');
 
         // Log email parameters
         error_log("Email Parameters - From: schoolcomm001@gmail.com, To: $parent_email, Student: {$student_data['first_name']} {$student_data['last_name']}, Reg: {$student_data['reg_number']}");
@@ -82,7 +83,15 @@ function sendStudentRegistrationEmail($parent_email, $parent_name, $student_data
         $mail->isHTML(true);
         $mail->Subject = 'Student Registration Confirmation - ' . $student_data['first_name'] . ' ' . $student_data['last_name'];
         $mail->Body = $body;
-        $mail->AltBody = strip_tags(str_replace(['<br>', '</p>'], ["\n", "\n\n"], $body));
+        $mail->AltBody = "Dear {$parent_name},\n\n" .
+            "Thank you for registering your child at " . ($school_info['name'] ?? 'our school') . ".\n" .
+            "Student Name: {$student_data['first_name']} {$student_data['last_name']}\n" .
+            "Registration Number: {$student_data['reg_number']}\n" .
+            "Class: {$student_data['class_name']}\n" .
+            (!empty($student_data['department_name']) ? ("Department: {$student_data['department_name']}\n") : "") .
+            "\nPlease keep this registration number for future reference.\n" .
+            "For any queries, contact us at: Phone: " . ($school_info['phone'] ?? 'N/A') . ", Email: " . ($school_info['email'] ?? 'N/A') . "\n\n" .
+            "Best regards,\n" . ($school_info['name'] ?? 'School') . " Administration";
 
         $mail->send();
         error_log("Registration email sent successfully to: " . $parent_email);

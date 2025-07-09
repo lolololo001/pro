@@ -1062,13 +1062,92 @@ try {
                         border-color: #dc3545 !important;
                         box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
                     }
+
+                    .announcements-btn {
+                        background: linear-gradient(135deg, var(--primary-color), #2563eb);
+                        color: #fff;
+                        padding: 0.7rem 1.3rem;
+                        border-radius: 8px;
+                        font-weight: 600;
+                        border: none;
+                        box-shadow: 0 2px 8px rgba(67,233,123,0.10);
+                        display: flex;
+                        align-items: center;
+                        gap: 0.5rem;
+                        cursor: pointer;
+                        transition: background 0.2s;
+                    }
+                    .announcements-btn:hover {
+                        background: linear-gradient(135deg, #2563eb, var(--primary-color));
+                    }
+                    .modal-announcements-bg {
+                        position: fixed;
+                        top: 0; left: 0; right: 0; bottom: 0;
+                        background: rgba(0,0,0,0.25);
+                        z-index: 1000;
+                        display: none;
+                        align-items: center;
+                        justify-content: center;
+                    }
+                    .modal-announcements {
+                        background: #fff;
+                        border-radius: 16px;
+                        box-shadow: 0 8px 32px rgba(67,233,123,0.18);
+                        max-width: 540px;
+                        width: 95vw;
+                        max-height: 80vh;
+                        overflow-y: auto;
+                        padding: 2rem 1.5rem 1.5rem 1.5rem;
+                        position: relative;
+                    }
+                    .modal-announcements .close-modal {
+                        position: absolute;
+                        top: 1.1rem;
+                        right: 1.3rem;
+                        font-size: 1.5rem;
+                        color: #888;
+                        cursor: pointer;
+                    }
+                    .announcement-item {
+                        border-bottom: 1px solid #e0e0e0;
+                        padding: 1rem 0;
+                    }
+                    .announcement-item:last-child {
+                        border-bottom: none;
+                    }
+                    .announcement-title {
+                        font-size: 1.15rem;
+                        font-weight: 700;
+                        color: var(--primary-color);
+                    }
+                    .announcement-meta {
+                        font-size: 0.95rem;
+                        color: #666;
+                        margin-bottom: 0.3rem;
+                    }
+                    .announcement-content {
+                        margin: 0.5rem 0 0.2rem 0;
+                        color: #222;
+                    }
+                    .announcement-priority.high {
+                        color: #e53e3e;
+                        font-weight: 600;
+                    }
+                    .announcement-priority.medium {
+                        color: #f59e42;
+                        font-weight: 600;
+                    }
+                    .announcement-priority.low {
+                        color: #38a169;
+                        font-weight: 600;
+                    }
                 </style>
 </head>
 <body>
     <!-- Sidebar Navigation -->
     <div class="sidebar">
         <div class="sidebar-header">
-            <a href="dashboard.php" class="sidebar-logo"><?php echo APP_NAME; ?><span>.</span></a>
+            <a href="dashboard.php" class="sidebar-logo"><?php echo APP_NAME; ?></a>
         </div>
         
         <div class="sidebar-user">
@@ -1125,13 +1204,18 @@ try {
     
     <!-- Main Content -->
     <div class="main-content">
-        <div class="page-header">
-            <h1>Parent Dashboard</h1>
-            <div class="breadcrumb">
-                <a href="dashboard.php">Home</a>
-                <span>/</span>
-                <a href="dashboard.php">Dashboard</a>
+        <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1>Parent Dashboard</h1>
+                <div class="breadcrumb">
+                    <a href="dashboard.php">Home</a>
+                    <span>/</span>
+                    <a href="dashboard.php">Dashboard</a>
+                </div>
             </div>
+            <button class="announcements-btn" onclick="openAnnouncementsModal()">
+                <i class="fas fa-bullhorn"></i> View Announcements
+            </button>
         </div>
         
         <?php if ($error): ?>
@@ -2733,6 +2817,54 @@ try {
                 sessionStorage.removeItem('sentimentResults');
             }
         });
+    </script>
+
+    <!-- Announcements Modal -->
+    <div class="modal-announcements-bg" id="announcementsModalBg">
+        <div class="modal-announcements">
+            <span class="close-modal" onclick="closeAnnouncementsModal()">&times;</span>
+            <h2 style="margin-bottom: 1.2rem; color: var(--primary-color);"><i class="fas fa-bullhorn"></i> School Announcements</h2>
+            <div id="announcementsList">
+                <div style="text-align:center; color:#888; padding:2rem 0;">
+                    <i class="fas fa-spinner fa-spin"></i> Loading announcements...
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        function openAnnouncementsModal() {
+            document.getElementById('announcementsModalBg').style.display = 'flex';
+            fetchAnnouncements();
+        }
+        function closeAnnouncementsModal() {
+            document.getElementById('announcementsModalBg').style.display = 'none';
+        }
+        function fetchAnnouncements() {
+            const list = document.getElementById('announcementsList');
+            list.innerHTML = '<div style="text-align:center; color:#888; padding:2rem 0;"><i class="fas fa-spinner fa-spin"></i> Loading announcements...</div>';
+            fetch('fetch_announcements.php')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.announcements.length > 0) {
+                        list.innerHTML = data.announcements.map(a => `
+                            <div class="announcement-item">
+                                <div class="announcement-title">${a.title}</div>
+                                <div class="announcement-meta">
+                                    <span>${a.date}</span> &bull; 
+                                    <span class="announcement-priority ${a.priority}">${a.priority.charAt(0).toUpperCase() + a.priority.slice(1)}</span>
+                                </div>
+                                <div class="announcement-content">${a.content}</div>
+                                ${a.attachment ? `<div style=\"margin-top:0.5rem;\"><a href=\"../uploads/announcements/${a.attachment}\" target=\"_blank\" class=\"btn btn-sm\" style=\"background:#2563eb;color:#fff;padding:0.4rem 1rem;border-radius:6px;text-decoration:none;display:inline-block;margin-top:0.3rem;\"><i class=\"fas fa-paperclip\"></i> View Attachment</a></div>` : ''}
+                            </div>
+                        `).join('');
+                    } else {
+                        list.innerHTML = '<div style="text-align:center; color:#888; padding:2rem 0;">No announcements found.</div>';
+                    }
+                })
+                .catch(() => {
+                    list.innerHTML = '<div style="text-align:center; color:#e53e3e; padding:2rem 0;">Failed to load announcements.</div>';
+                });
+        }
     </script>
 </body>
 </html></html>

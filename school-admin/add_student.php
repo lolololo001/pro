@@ -289,46 +289,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $school_info = $school_result->fetch_assoc();
             $school_stmt->close();
 
-            // --- EMAIL SENDING BLOCK ---
+            // --- EMAIL SENDING BLOCK (using helper) ---
             $email_error_message = '';
             if (!empty($parent_email)) {
-                require_once __DIR__ . '/../vendor/autoload.php';
-                $mail = new PHPMailer(true);
-                try {
-                    $mail->SMTPDebug = 2; // Show full debug output in logs (set to 0 in production)
-                    $mail->isSMTP();
-                    $mail->Host = 'smtp.gmail.com';
-                    $mail->SMTPAuth = true;
-                    $mail->Username = 'schoolcomm001@gmail.com';
-                    $mail->Password = 'nuos orzj keap bszp';
-                    $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-                    $mail->Port = 465;
-                    $mail->addCustomHeader('X-Priority', '1');
-                    $mail->addCustomHeader('X-MSMail-Priority', 'High');
-                    $mail->addCustomHeader('Importance', 'High');
-                    $mail->setFrom('schoolcomm001@gmail.com', $school_info['name'] ?? 'SchoolComm');
-                    $mail->addAddress($parent_email, $parent_name);
-                    $body = "<html><body>"
-                        . "<p><strong>Dear " . htmlspecialchars($parent_name) . ",</strong></p>"
-                        . "<p>Your child <strong>" . htmlspecialchars($first_name . ' ' . $last_name) . "</strong> has been registered at <strong>" . htmlspecialchars($school_info['name'] ?? 'our school') . "</strong>.</p>"
-                        . "<p><strong>Registration Number:</strong> " . htmlspecialchars($reg_number) . "<br>"
-                        . "<strong>Class:</strong> " . htmlspecialchars($class_name) . "<br>"
-                        . (!empty($department_name) ? ("<strong>Department:</strong> " . htmlspecialchars($department_name) . "<br>") : "")
-                        . "</p>"
-                        . "<p>Please keep this registration number for future reference. You can use it to access your child's academic records, make fee payments, communicate with teachers, and track progress.</p>"
-                        . "<p>For any queries, contact us at:<br>"
-                        . "Phone: " . htmlspecialchars($school_info['phone'] ?? 'N/A') . "<br>"
-                        . "Email: " . htmlspecialchars($school_info['email'] ?? 'N/A') . "</p>"
-                        . "<br><p>Regards,<br>" . htmlspecialchars($school_info['name'] ?? 'SchoolComm') . " Team</p>"
-                        . "</body></html>";
-                    $mail->isHTML(true);
-                    $mail->Subject = 'Student Registration Confirmation - ' . $first_name . ' ' . $last_name;
-                    $mail->Body = $body;
-                    $mail->AltBody = strip_tags($body);
-                    $mail->send();
-                    error_log("Registration email sent successfully to: " . $parent_email);
-                } catch (Exception $e) {
-                    $email_error_message = "Failed to send registration email: " . $e->getMessage() . " | Info: " . print_r($mail->ErrorInfo, true);
+                $student_data = [
+                    'first_name' => $first_name,
+                    'last_name' => $last_name,
+                    'reg_number' => $reg_number,
+                    'class_name' => $class_name,
+                    'department_name' => $department_name
+                ];
+                $email_sent = sendStudentRegistrationEmail($parent_email, $parent_name, $student_data, $school_info);
+                if (!$email_sent) {
+                    $email_error_message = 'Failed to send registration email. Check logs for details.';
                     error_log($email_error_message);
                 }
             }

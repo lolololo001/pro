@@ -124,7 +124,7 @@ $conn->close();
     <!-- Sidebar Navigation (copied from dashboard.php) -->
     <div class="sidebar">
         <div class="sidebar-header">
-            <a href="dashboard.php" class="sidebar-logo">SchoolComm<span>.</span></a>
+            <a href="dashboard.php" class="sidebar-logo">SchoolComm</a>
         </div>
         <div class="sidebar-user">
             <div class="user-avatar">
@@ -174,8 +174,8 @@ $conn->close();
             <div class="student-header" style="display: flex; justify-content: center; align-items: flex-start; margin-bottom: 2.5rem; position: relative;">
                 <div style="position: relative; max-width: 440px; width: 100%; background: rgba(255,255,255,0.18); border-radius: 2.2rem; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.18); border: 1.5px solid rgba(67, 233, 123, 0.25); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); padding: 3.5rem 2.5rem 2.2rem 2.5rem; display: flex; flex-direction: column; align-items: center;">
                     <div style="position: absolute; top: -55px; left: 50%; transform: translateX(-50%); z-index: 2;">
-                        <div class="student-avatar" style="width: 110px; height: 110px; font-size: 3.8rem; background: linear-gradient(135deg, #fff 60%, #43e97b 100%); color: #009260; box-shadow: 0 4px 24px #43e97b33, 0 0 0 8px rgba(67,233,123,0.10); display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 4px solid #fff; filter: drop-shadow(0 2px 12px #43e97b33);">
-                            <i class="fas fa-user-graduate"></i>
+                        <div style="width: 110px; height: 110px; border-radius: 50%; background: linear-gradient(135deg, #fff 60%, #43e97b 100%); box-shadow: 0 4px 24px #43e97b33, 0 0 0 8px rgba(67,233,123,0.10); display: flex; align-items: center; justify-content: center; border: 4px solid #fff; filter: drop-shadow(0 2px 12px #43e97b33);">
+                            <i class="fas fa-graduation-cap" style="font-size: 3.5rem; color: #009260;"></i>
                         </div>
                     </div>
                     <div style="margin-top: 65px; font-size: 2.3rem; font-weight: 900; color: #222; letter-spacing: 1.5px; margin-bottom: 1.3rem; text-align: center; text-shadow: 0 2px 16px #43e97b33, 0 1px 0 #fff; filter: drop-shadow(0 2px 8px #43e97b22);">
@@ -240,22 +240,23 @@ $conn->close();
                     echo '<tbody>';
                     
                     while ($permission = $permissionResult->fetch_assoc()) {
-                        $status = strtolower($permission['status']);
-                        $statusClass = 'status-badge status-' . $status;
-                        $statusIcon = '';
-                        
-                        switch ($status) {
-                            case 'pending':
-                                $statusIcon = '<i class="fas fa-clock"></i> ';
-                                break;
-                            case 'approved':
-                                $statusIcon = '<i class="fas fa-check-circle"></i> ';
-                                break;
-                            case 'rejected':
-                                $statusIcon = '<i class="fas fa-times-circle"></i> ';
-                                break;
+                        $status = strtolower(trim($permission['status']));
+                        $statusClass = 'status-badge status-unknown';
+                        $statusIcon = '<i class="fas fa-question-circle"></i> ';
+                        $displayStatus = 'Unknown';
+                        if ($status === 'pending') {
+                            $statusClass = 'status-badge status-pending';
+                            $statusIcon = '<i class="fas fa-clock"></i> ';
+                            $displayStatus = 'Pending';
+                        } elseif ($status === 'approved') {
+                            $statusClass = 'status-badge status-approved';
+                            $statusIcon = '<i class="fas fa-check-circle"></i> ';
+                            $displayStatus = 'Approved';
+                        } elseif ($status === 'rejected') {
+                            $statusClass = 'status-badge status-rejected';
+                            $statusIcon = '<i class="fas fa-times-circle"></i> ';
+                            $displayStatus = 'Rejected';
                         }
-                        
                         echo '<tr style="border-bottom: 1px solid #dee2e6; transition: background-color 0.2s;">';
                         echo '<td style="padding: 12px; color: #6c757d;">' . date('M d, Y', strtotime($permission['created_at'])) . '</td>';
                         echo '<td style="padding: 12px; color: #495057; font-weight: 500;">' . ucfirst(htmlspecialchars($permission['request_type'])) . '</td>';
@@ -269,7 +270,7 @@ $conn->close();
                         echo '</td>';
                         echo '<td style="padding: 12px;">';
                         echo '<span class="' . $statusClass . '" style="display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">';
-                        echo $statusIcon . ucfirst($permission['status']);
+                        echo $statusIcon . $displayStatus;
                         echo '</span>';
                         echo '</td>';
                         echo '<td style="padding: 12px; color: #6c757d;">';

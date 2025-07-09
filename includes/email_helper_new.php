@@ -193,3 +193,102 @@ function sendFeedbackConfirmationEmail($parentEmail, $parentName, $feedbackType,
         return ['success' => false, 'message' => $error_message];
     }
 }
+
+function sendFeedbackReplyEmail($parentEmail, $parentName, $feedbackSubject, $feedbackMessage, $replyMessage, $schoolName) {
+    if (empty($parentEmail)) {
+        error_log("Feedback reply email sending skipped: No parent email provided");
+        return ['success' => false, 'message' => 'No email address provided'];
+    }
+
+    try {
+        error_log("Attempting to send feedback reply email to: " . $parentEmail);
+
+        require_once __DIR__ . '/../vendor/autoload.php';
+        $mail = new PHPMailer(true);
+
+        // Server settings
+        $mail->SMTPDebug = 0; // Disable debug output
+        $mail->isSMTP();
+        $mail->Host = 'smtp.gmail.com';
+        $mail->SMTPAuth = true;
+        $mail->Username = 'schoolcomm001@gmail.com';
+        $mail->Password = 'nuos orzj keap bszp';
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+        $mail->Port = 465;
+        
+        // Connection options for better reliability
+        $mail->SMTPOptions = array(
+            'ssl' => array(
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+                'allow_self_signed' => true
+            )
+        );
+
+        // Set email priority
+        $mail->Priority = 1;
+        $mail->addCustomHeader('X-MSMail-Priority', 'High');
+        $mail->addCustomHeader('Importance', 'High');
+
+        // Recipients
+        $mail->setFrom('schoolcomm001@gmail.com', $schoolName ?? 'SchoolComm');
+        $mail->addAddress($parentEmail, $parentName);
+
+        // Email content
+        $emailBody = "
+            <html>
+            <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
+                <div style='max-width: 600px; margin: 0 auto; padding: 20px;'>
+                    <div style='text-align: center; margin-bottom: 30px;'>
+                        <h2 style='color: #00704a;'>Feedback Response</h2>
+                    </div>
+                    
+                    <p><strong>Dear {$parentName},</strong></p>
+                    
+                    <p>Thank you for your feedback. We have reviewed your message and would like to provide you with a response.</p>
+                    
+                    <div style='background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #00704a;'>
+                        <h4 style='color: #00704a; margin-top: 0;'>Your Original Feedback:</h4>
+                        " . (!empty($feedbackSubject) ? "<p><strong>Subject:</strong> " . htmlspecialchars($feedbackSubject) . "</p>" : "") . "
+                        <p><strong>Message:</strong></p>
+                        <div style='background: white; padding: 10px; border-radius: 3px; margin: 10px 0;'>
+                            " . nl2br(htmlspecialchars($feedbackMessage)) . "
+                        </div>
+                    </div>
+                    
+                    <div style='background: #e8f5e9; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #4caf50;'>
+                        <h4 style='color: #2e7d32; margin-top: 0;'>Our Response:</h4>
+                        <div style='background: white; padding: 10px; border-radius: 3px; margin: 10px 0;'>
+                            " . nl2br(htmlspecialchars($replyMessage)) . "
+                        </div>
+                    </div>
+                    
+                    <p>We appreciate your feedback and are committed to continuously improving our services. If you have any further questions or concerns, please don't hesitate to reach out to us.</p>
+                    
+                    <p>Best regards,<br>" . htmlspecialchars($schoolName ?? 'School') . " Administration</p>
+                    
+                    <div style='margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666;'>
+                        <p>This is an automated response to your feedback. If you need immediate assistance, please contact us directly.</p>
+                    </div>
+                </div>
+            </body>
+            </html>";
+
+        $mail->isHTML(true);
+        $mail->Subject = 'Response to Your Feedback - ' . ($schoolName ?? 'SchoolComm');
+        $mail->Body = $emailBody;
+        $mail->AltBody = strip_tags(str_replace(['<br>', '</p>'], ["\n", "\n\n"], $emailBody));
+
+        error_log("Attempting to send feedback reply email to: $parentEmail");
+        $mail->send();
+        error_log("Feedback reply email sent successfully to: " . $parentEmail);
+        return ['success' => true, 'message' => 'Reply email sent successfully'];
+    } catch (Exception $e) {
+        $error_message = "Failed to send feedback reply email: " . $e->getMessage();
+        error_log($error_message);
+        if (isset($mail)) {
+            error_log("Mail Error Info: " . print_r($mail->ErrorInfo, true));
+        }
+        return ['success' => false, 'message' => $error_message];
+    }
+}

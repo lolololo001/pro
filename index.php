@@ -782,7 +782,12 @@ if (isset($_GET['search']) && !empty($_GET['search'])) {
     <!-- Header Section -->
     <header>
         <div class="container header-container">
-            <a href="index.php" class="logo"><?php echo APP_NAME; ?><span></span></a>
+            <a href="index.php" class="logo" style="display: flex; align-items: center; gap: 0.7rem; text-decoration: none;">
+                <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #fff 60%, #43e97b 100%); box-shadow: 0 4px 24px #43e97b33, 0 0 0 8px rgba(67,233,123,0.10); display: flex; align-items: center; justify-content: center; border: 3px solid #fff; filter: drop-shadow(0 2px 12px #43e97b33);">
+                    <i class="fas fa-graduation-cap" style="font-size: 1.7rem; color: #009260;"></i>
+                </div>
+                <span style="font-size: 1.8rem; font-weight: 700; color: var(--light-color); letter-spacing: 1px;">SchoolComm</span>
+            </a>
             
             <nav>
                 <ul>

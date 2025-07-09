@@ -6,8 +6,9 @@ session_start();
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// Load config
+// Load config and email helper
 require_once '../config/config.php';
+require_once '../includes/email_helper_new.php';
 
 // Check if school admin is logged in
 if (!isset($_SESSION['school_admin_id'])) {
@@ -24,101 +25,7 @@ if (!$school_id) {
 // Get database connection
 $conn = getDbConnection();
 
-// Test database connection and parents table
-if (isset($_GET['test']) && $_GET['test'] == '1') {
-    echo "<div style='background: #f0f0f0; padding: 1rem; margin: 1rem; border-radius: 5px;'>";
-    echo "<h3>Database Test Results:</h3>";
 
-    // Test connection
-    if ($conn) {
-        echo "✅ Database connection: OK<br>";
-
-        // Test parents table existence
-        $table_check = $conn->query("SHOW TABLES LIKE 'parents'");
-        if ($table_check && $table_check->num_rows > 0) {
-            echo "✅ Parents table: EXISTS<br>";
-
-            // Count all parents
-            $count_result = $conn->query("SELECT COUNT(*) as total FROM parents");
-            if ($count_result) {
-                $count = $count_result->fetch_assoc()['total'];
-                echo "✅ Total parents in database: $count<br>";
-
-                // Show first few parents
-                $sample_result = $conn->query("SELECT id, name, email, created_at FROM parents LIMIT 3");
-                if ($sample_result && $sample_result->num_rows > 0) {
-                    echo "✅ Sample parents:<br>";
-                    while ($row = $sample_result->fetch_assoc()) {
-                        echo "&nbsp;&nbsp;- ID: {$row['id']}, Name: {$row['first_name']} {$row['last_name']}, Email: {$row['email']}<br>";
-                    }
-                } else {
-                    echo "❌ No parents found in table<br>";
-                }
-            } else {
-                echo "❌ Error counting parents: " . $conn->error . "<br>";
-            }
-
-            // Test students table and parent-child relationships
-            $students_check = $conn->query("SHOW TABLES LIKE 'students'");
-            if ($students_check && $students_check->num_rows > 0) {
-                echo "✅ Students table: EXISTS<br>";
-
-                $students_count = $conn->query("SELECT COUNT(*) as total FROM students");
-                if ($students_count) {
-                    $s_count = $students_count->fetch_assoc()['total'];
-                    echo "✅ Total students in database: $s_count<br>";
-
-                    // Check for student_parent relationship table (parent portal assignments)
-                    $student_parent_check = $conn->query("SHOW TABLES LIKE 'student_parent'");
-                    if ($student_parent_check && $student_parent_check->num_rows > 0) {
-                        echo "✅ Student-Parent relationship table: EXISTS<br>";
-
-                        $sp_count = $conn->query("SELECT COUNT(*) as total FROM student_parent");
-                        if ($sp_count) {
-                            $sp_total = $sp_count->fetch_assoc()['total'];
-                            echo "✅ Total parent-child relationships: $sp_total<br>";
-
-                            // Show sample relationships from student_parent table
-                            $sp_relationships = $conn->query("                                SELECT CONCAT(p.first_name, ' ', p.last_name) as parent_name, p.email as parent_email,
-                                       s.first_name, s.last_name, sp.is_primary
-                                FROM student_parent sp
-                                JOIN parents p ON sp.parent_id = p.id
-                                JOIN students s ON sp.student_id = s.id
-                                LIMIT 5
-                            ");
-                            if ($sp_relationships && $sp_relationships->num_rows > 0) {
-                                echo "✅ Sample parent-child relationships (from parent portal):<br>";
-                                while ($rel = $sp_relationships->fetch_assoc()) {
-                                    $primary = $rel['is_primary'] ? ' (PRIMARY)' : '';
-                                    echo "&nbsp;&nbsp;- Parent: {$rel['parent_name']} ({$rel['parent_email']}) → Child: {$rel['first_name']} {$rel['last_name']}$primary<br>";
-                                }
-                            }
-                        }
-                    } else {
-                        echo "❌ Student-Parent relationship table: NOT FOUND<br>";
-                        echo "&nbsp;&nbsp;→ Using fallback method (parent_name/parent_email fields in students table)<br>";
-
-                        // Show fallback relationships
-                        $relationships = $conn->query("SELECT parent_name, parent_email, parent_phone, first_name, last_name FROM students LIMIT 5");
-                        if ($relationships && $relationships->num_rows > 0) {
-                            echo "✅ Sample parent-child relationships (fallback method):<br>";
-                            while ($rel = $relationships->fetch_assoc()) {
-                                echo "&nbsp;&nbsp;- Parent: {$rel['parent_name']} ({$rel['parent_email']}) → Child: {$rel['first_name']} {$rel['last_name']}<br>";
-                            }
-                        }
-                    }
-                }
-            } else {
-                echo "❌ Students table: NOT FOUND<br>";
-            }
-        } else {
-            echo "❌ Parents table: NOT FOUND<br>";
-        }
-    } else {
-        echo "❌ Database connection: FAILED<br>";
-    }
-    echo "</div>";
-}
 
 // Handle delete action
 if (isset($_GET['action']) && $_GET['action'] == 'delete' && isset($_GET['id'])) {
@@ -146,16 +53,54 @@ if (isset($_POST['reply_feedback']) && isset($_POST['feedback_id']) && isset($_P
     $admin_id = $_SESSION['school_admin_id'];
 
     if (!empty($reply_message)) {
-        // Insert reply into feedback_replies table
-        $stmt = $conn->prepare("INSERT INTO feedback_replies (feedback_id, admin_id, reply_message, created_at) VALUES (?, ?, ?, NOW())");
-        $stmt->bind_param('iis', $feedback_id, $admin_id, $reply_message);
-
-        if ($stmt->execute()) {
-            $_SESSION['parent_success'] = 'Reply sent successfully!';
-        } else {
-            $_SESSION['parent_error'] = 'Failed to send reply: ' . $conn->error;
-        }
+        // Get feedback details and parent information
+        $feedback_query = "SELECT pf.*, p.first_name, p.last_name, p.email as parent_email, s.name as school_name 
+                          FROM parent_feedback pf 
+                          JOIN parents p ON pf.parent_id = p.id 
+                          JOIN schools s ON pf.school_id = s.id 
+                          WHERE pf.id = ?";
+        $stmt = $conn->prepare($feedback_query);
+        $stmt->bind_param('i', $feedback_id);
+        $stmt->execute();
+        $feedback_result = $stmt->get_result();
+        $feedback_data = $feedback_result->fetch_assoc();
         $stmt->close();
+
+        if ($feedback_data) {
+            // Insert reply into feedback_replies table
+            $stmt = $conn->prepare("INSERT INTO feedback_replies (feedback_id, admin_id, reply_message, created_at) VALUES (?, ?, ?, NOW())");
+            $stmt->bind_param('iis', $feedback_id, $admin_id, $reply_message);
+
+            if ($stmt->execute()) {
+                // Send email to parent
+                $parent_name = $feedback_data['first_name'] . ' ' . $feedback_data['last_name'];
+                $parent_email = $feedback_data['parent_email'];
+                $feedback_subject = $feedback_data['subject'] ?? '';
+                // Handle both feedback_text and message field names
+                $feedback_text = $feedback_data['feedback_text'] ?? $feedback_data['message'] ?? '';
+                $school_name = $feedback_data['school_name'];
+
+                $email_result = sendFeedbackReplyEmail(
+                    $parent_email,
+                    $parent_name,
+                    $feedback_subject,
+                    $feedback_text,
+                    $reply_message,
+                    $school_name
+                );
+
+                if ($email_result['success']) {
+                    $_SESSION['parent_success'] = 'Reply sent successfully and email notification delivered!';
+                } else {
+                    $_SESSION['parent_success'] = 'Reply saved successfully, but email notification failed: ' . $email_result['message'];
+                }
+            } else {
+                $_SESSION['parent_error'] = 'Failed to send reply: ' . $conn->error;
+            }
+            $stmt->close();
+        } else {
+            $_SESSION['parent_error'] = 'Feedback not found.';
+        }
     } else {
         $_SESSION['parent_error'] = 'Reply message cannot be empty.';
     }
@@ -220,42 +165,7 @@ try {
         }
     }
 
-    // Add sample feedback data if tables are empty (for testing)
-    if (isset($_GET['add_sample_data']) && $_GET['add_sample_data'] == '1') {
-        // Check if we have any parents first
-        $parent_check = $conn->query("SELECT COUNT(*) as count FROM parents WHERE school_id = $school_id");
-        $parent_count = $parent_check->fetch_assoc()['count'];
 
-        if ($parent_count > 0) {
-            // Get a parent ID for sample data
-            $parent_result = $conn->query("SELECT id FROM parents WHERE school_id = $school_id LIMIT 1");
-            $parent_id = $parent_result->fetch_assoc()['id'];
-
-            // Check if feedback table is empty
-            $feedback_check = $conn->query("SELECT COUNT(*) as count FROM parent_feedback WHERE school_id = $school_id");
-            $feedback_count = $feedback_check->fetch_assoc()['count'];
-
-            if ($feedback_count == 0) {
-                // Insert sample feedback
-                $sample_feedback = [
-                    "The school is doing an excellent job with my child's education. The teachers are very supportive and caring.",
-                    "I'm concerned about the lack of extracurricular activities. My child needs more opportunities to explore their interests.",
-                    "The communication between school and parents could be improved. Sometimes I feel out of the loop about school events."
-                ];
-
-                $sentiments = ['positive', 'negative', 'neutral'];
-
-                for ($i = 0; $i < 3; $i++) {
-                    $stmt = $conn->prepare("INSERT INTO parent_feedback (parent_id, school_id, feedback_text, sentiment_label) VALUES (?, ?, ?, ?)");
-                    $stmt->bind_param('iiss', $parent_id, $school_id, $sample_feedback[$i], $sentiments[$i]);
-                    $stmt->execute();
-                    $stmt->close();
-                }
-
-                $_SESSION['parent_success'] = 'Sample feedback data added for testing!';
-            }
-        }
-    }
 
 } catch (Exception $e) {
     $_SESSION['parent_error'] = "Database error: " . $e->getMessage();
@@ -566,46 +476,7 @@ try {
             }
         }
 
-        // Debug information
-        if (isset($_GET['debug']) && $_GET['debug'] == '1') {
-            echo "<!-- DEBUG INFO:\n";
-            echo "Total parents found: " . count($parents) . "\n";
-            echo "Parent stats: " . print_r($parent_stats, true) . "\n";
-            echo "Using student_parent relationship table: " . ($use_relationship_table ?? false ? 'YES' : 'NO') . "\n";
-            echo "Department join: " . ($dept_join ?? 'NONE') . "\n";
-            echo "Class join: " . ($class_join ?? 'NONE') . "\n";
-            if (count($parents) > 0) {
-                echo "First parent: " . print_r($parents[0], true) . "\n";
-                echo "Available columns in students table: " . print_r($available_columns ?? [], true) . "\n";
-                if (isset($dept_columns)) {
-                    echo "Available columns in departments table: " . print_r($dept_columns, true) . "\n";
-                }
-                if (isset($class_columns)) {
-                    echo "Available columns in classes table: " . print_r($class_columns, true) . "\n";
-                }
 
-                // Show ALL parent-child relationships
-                foreach ($parents as $p) {                    if (!empty($p['children'])) {
-                        echo "Parent: " . $p['first_name'] . ' ' . $p['last_name'] . " (" . $p['email'] . ") has " . count($p['children']) . " children:\n";
-                        foreach ($p['children'] as $c) {
-                            $primary_text = (isset($c['is_primary']) && $c['is_primary']) ? ' (PRIMARY)' : '';
-                            $id_text = '';
-                            if (isset($c['admission_number']) && $c['admission_number']) {
-                                $id_text = ' [ID: ' . $c['admission_number'] . ']';
-                            } elseif (isset($c['registration_number']) && $c['registration_number']) {
-                                $id_text = ' [ID: ' . $c['registration_number'] . ']';
-                            } elseif (isset($c['reg_number']) && $c['reg_number']) {
-                                $id_text = ' [ID: ' . $c['reg_number'] . ']';
-                            }
-                            echo "  - " . $c['first_name'] . " " . $c['last_name'] . $primary_text . $id_text . "\n";
-                        }
-                    } else {
-                        echo "Parent: " . $p['first_name'] . ' ' . $p['last_name'] . " (" . $p['email'] . ") has NO children assigned\n";
-                    }
-                }
-            }
-            echo "-->\n";
-        }
 
     } else {
         throw new Exception("Failed to execute query: " . $conn->error);
@@ -641,12 +512,19 @@ try {
             $columns[] = $col['Field'];
         }
 
-        // Check if required columns exist
-        if (in_array('feedback_text', $columns) && in_array('parent_id', $columns)) {
+        // Check if required columns exist - try different field names based on actual table structure
+        $feedbackTextColumn = in_array('feedback_text', $columns) ? 'feedback_text' : (in_array('message', $columns) ? 'message' : null);
+        $parentIdColumn = in_array('parent_id', $columns) ? 'parent_id' : null;
+        
+        if ($feedbackTextColumn && $parentIdColumn) {
             $stmt = $conn->prepare('
                 SELECT
-                    pf.id,                    pf.feedback_text,
+                    pf.id,
+                    pf.' . $feedbackTextColumn . ' as feedback_text,
                     pf.sentiment_label,
+                    pf.subject,
+                    pf.feedback_type,
+                    pf.suggestion,
                     pf.created_at,
                     CONCAT(p.first_name, SPACE(1), p.last_name) as parent_name,
                     p.email as parent_email,
@@ -671,6 +549,9 @@ try {
                         'id' => $row['id'],
                         'feedback_text' => $row['feedback_text'],
                         'sentiment_label' => $row['sentiment_label'],
+                        'subject' => $row['subject'] ?? null,
+                        'feedback_type' => $row['feedback_type'] ?? null,
+                        'suggestion' => $row['suggestion'] ?? null,
                         'created_at' => $row['created_at'],
                         'parent_name' => $row['parent_name'],
                         'parent_email' => $row['parent_email'],
@@ -1338,6 +1219,128 @@ $conn->close();
                 flex-direction: column;
             }
         }
+
+        /* Filter controls styling */
+        .filter-controls select {
+            transition: all 0.3s ease;
+        }
+
+        .filter-controls select:focus {
+            border-color: #00704a;
+            box-shadow: 0 0 0 0.2rem rgba(0, 112, 74, 0.25);
+        }
+
+        /* Enhanced filter section styling */
+        .feedback-filters {
+            border: 1px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .feedback-filters:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .feedback-filters select:focus,
+        .feedback-filters input:focus {
+            border-color: #00704a;
+            box-shadow: 0 0 0 0.2rem rgba(0, 112, 74, 0.25);
+            outline: none;
+        }
+
+        .feedback-filters label {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        /* Enhanced search bar styling */
+        .feedback-filters .search-box {
+            position: relative;
+            width: 100%;
+        }
+
+        .feedback-filters .search-input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        .feedback-filters .search-input:focus {
+            border-color: #00704a;
+            background: white;
+            box-shadow: 0 0 0 0.2rem rgba(0, 112, 74, 0.15);
+            outline: none;
+        }
+
+        .feedback-filters .search-input::placeholder {
+            color: #adb5bd;
+            font-style: italic;
+        }
+
+        .feedback-filters .search-box .fa-search {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #00704a;
+            font-size: 1rem;
+            z-index: 2;
+            transition: all 0.3s ease;
+        }
+
+        .feedback-filters .search-input:focus + .fa-search {
+            color: #005a3c;
+        }
+
+        /* Enhanced select styling */
+        .feedback-filters select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            background: white;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg fill="%23666" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1rem;
+            font-family: inherit;
+        }
+
+        .feedback-filters select:focus {
+            border-color: #00704a;
+            box-shadow: 0 0 0 0.2rem rgba(0, 112, 74, 0.15);
+            outline: none;
+        }
+
+        .feedback-filters select:hover {
+            border-color: #00704a;
+        }
+
+        /* Active filters styling */
+        #active-filters {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 0.75rem;
+            border-left: 4px solid #00704a;
+        }
+
+        #filter-tags span {
+            transition: all 0.2s ease;
+        }
+
+        #filter-tags span:hover {
+            background: #bbdefb !important;
+            transform: scale(1.05);
+        }
     </style>
 </head>
 <body>
@@ -1734,14 +1737,7 @@ $conn->close();
                                 <div class="empty-text">No parents found</div>
                                 <p>Start by adding a new parent using the Add Parent button above.</p>
                                 <br>
-                                <div style="margin-top: 1rem;">
-                                    <a href="parents.php?test=1" class="btn btn-secondary" style="margin-right: 1rem;">
-                                        <i class="fas fa-database"></i> Test Database Connection
-                                    </a>
-                                    <a href="parents.php?debug=1" class="btn btn-secondary">
-                                        <i class="fas fa-bug"></i> Enable Debug Mode
-                                    </a>
-                                </div>
+
                             </div>
                         <?php endif; ?>
                     </div>
@@ -1753,69 +1749,273 @@ $conn->close();
                 <div class="card">
                     <div class="card-header">
                         <h2><i class="fas fa-comments"></i> Parent Feedback & Messages</h2>
-                        <div style="display: flex; gap: 1rem; align-items: center;">
-                            <button onclick="exportFeedbackData()" class="btn export-btn" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem; font-size: 0.9rem; border-radius: 6px; background-color: #f8f9fa; border: 1px solid #dee2e6; color: #495057; transition: all 0.3s ease;">
-                                <i class="fas fa-download"></i> Export Feedback
-                            </button>
-                        </div>
                     </div>
                     <div class="card-body">
                         <?php if (count($feedback) > 0): ?>
-                            <!-- Search Box for Feedback -->
-                            <div class="search-container" data-table="feedback-container">
-                                <div class="search-box">
-                                    <i class="fas fa-search search-icon"></i>
-                                    <input type="text" class="search-input" placeholder="Search feedback...">
-                                    <button type="button" class="search-clear" onclick="clearFeedbackSearch()">
-                                        <i class="fas fa-times"></i>
-                                    </button>
+                            <!-- Feedback Statistics -->
+                            <div class="feedback-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                                <?php
+                                    $totalFeedback = count($feedback);
+                                    $positiveFeedback = 0;
+                                    $negativeFeedback = 0;
+                                    $neutralFeedback = 0;
+                                    $repliedFeedback = 0;
+                                    
+                                    foreach ($feedback as $item) {
+                                        switch ($item['sentiment_label']) {
+                                            case 'positive':
+                                                $positiveFeedback++;
+                                                break;
+                                            case 'negative':
+                                                $negativeFeedback++;
+                                                break;
+                                            case 'neutral':
+                                                $neutralFeedback++;
+                                                break;
+                                        }
+                                        
+                                        if (!empty($item['replies'])) {
+                                            $repliedFeedback++;
+                                        }
+                                    }
+                                ?>
+                                <div class="stat-card" style="background: linear-gradient(135deg, #e8f5e9, #c8e6c9); border: 1px solid #4caf50; padding: 1rem; border-radius: 8px;">
+                                    <div style="display: flex; align-items: center; gap: 1rem;">
+                                        <div style="width: 40px; height: 40px; background: #4caf50; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white;">
+                                            <i class="fas fa-comments"></i>
+                                        </div>
+                                        <div>
+                                            <h3 style="margin: 0; font-size: 1.5rem; color: #2e7d32;"><?php echo $totalFeedback; ?></h3>
+                                            <p style="margin: 0; color: #388e3c; font-size: 0.9rem;">Total Feedback</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="stat-card" style="background: linear-gradient(135deg, #e8f5e9, #c8e6c9); border: 1px solid #4caf50; padding: 1rem; border-radius: 8px;">
+                                    <div style="display: flex; align-items: center; gap: 1rem;">
+                                        <div style="width: 40px; height: 40px; background: #4caf50; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white;">
+                                            <i class="fas fa-thumbs-up"></i>
+                                        </div>
+                                        <div>
+                                            <h3 style="margin: 0; font-size: 1.5rem; color: #2e7d32;"><?php echo $positiveFeedback; ?></h3>
+                                            <p style="margin: 0; color: #388e3c; font-size: 0.9rem;">Positive</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="stat-card" style="background: linear-gradient(135deg, #fff3e0, #ffe0b2); border: 1px solid #ff9800; padding: 1rem; border-radius: 8px;">
+                                    <div style="display: flex; align-items: center; gap: 1rem;">
+                                        <div style="width: 40px; height: 40px; background: #ff9800; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white;">
+                                            <i class="fas fa-minus"></i>
+                                        </div>
+                                        <div>
+                                            <h3 style="margin: 0; font-size: 1.5rem; color: #f57c00;"><?php echo $neutralFeedback; ?></h3>
+                                            <p style="margin: 0; color: #f57c00; font-size: 0.9rem;">Neutral</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="stat-card" style="background: linear-gradient(135deg, #ffebee, #ffcdd2); border: 1px solid #f44336; padding: 1rem; border-radius: 8px;">
+                                    <div style="display: flex; align-items: center; gap: 1rem;">
+                                        <div style="width: 40px; height: 40px; background: #f44336; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white;">
+                                            <i class="fas fa-thumbs-down"></i>
+                                        </div>
+                                        <div>
+                                            <h3 style="margin: 0; font-size: 1.5rem; color: #c62828;"><?php echo $negativeFeedback; ?></h3>
+                                            <p style="margin: 0; color: #c62828; font-size: 0.9rem;">Negative</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="stat-card" style="background: linear-gradient(135deg, #e3f2fd, #bbdefb); border: 1px solid #2196f3; padding: 1rem; border-radius: 8px;">
+                                    <div style="display: flex; align-items: center; gap: 1rem;">
+                                        <div style="width: 40px; height: 40px; background: #2196f3; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white;">
+                                            <i class="fas fa-reply"></i>
+                                        </div>
+                                        <div>
+                                            <h3 style="margin: 0; font-size: 1.5rem; color: #1976d2;"><?php echo $repliedFeedback; ?></h3>
+                                            <p style="margin: 0; color: #1976d2; font-size: 0.9rem;">Replied</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <br>
+
+                            <!-- Filter and Search Controls -->
+                            <div class="feedback-filters" style="background: white; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                <!-- Search Box - Professional Design -->
+                                <div class="search-container" style="margin-bottom: 1.5rem;">
+                                    <div class="search-box" style="position: relative; width: 100%;">
+                                        <i class="fas fa-search" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #00704a; font-size: 1rem; z-index: 2; transition: all 0.3s ease;"></i>
+                                        <input type="text" class="search-input" placeholder="Search feedback by parent name, content, subject, or type..." 
+                                               style="width: 100%; padding: 0.75rem 1rem 0.75rem 2.5rem; border: 1px solid #e1e5e9; border-radius: 8px; font-size: 0.95rem; background: #f8f9fa; transition: all 0.3s ease; box-sizing: border-box;">
+                                    </div>
+                                </div>
+                                
+                                <!-- Filter Controls - Grid Layout -->
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; align-items: end;">
+                                    <!-- Sentiment Filter -->
+                                    <div>
+                                        <select id="sentimentFilter" onchange="filterFeedbackBySentiment()" 
+                                                style="width: 100%; padding: 0.75rem; border: 1px solid #e9ecef; border-radius: 8px; background: white; font-size: 0.9rem; cursor: pointer; transition: all 0.3s ease; appearance: none; background-image: url('data:image/svg+xml;utf8,<svg fill="%23666" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>'); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1rem;">
+                                            <option value="">💚 All Sentiments</option>
+                                            <option value="positive">👍 Positive</option>
+                                            <option value="neutral">➖ Neutral</option>
+                                            <option value="negative">👎 Negative</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Reply Status Filter -->
+                                    <div>
+                                        <select id="replyFilter" onchange="filterFeedbackByReply()" 
+                                                style="width: 100%; padding: 0.75rem; border: 1px solid #e9ecef; border-radius: 8px; background: white; font-size: 0.9rem; cursor: pointer; transition: all 0.3s ease; appearance: none; background-image: url('data:image/svg+xml;utf8,<svg fill="%23666" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>'); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1rem;">
+                                            <option value="">💬 All Feedback</option>
+                                            <option value="replied">✅ Replied</option>
+                                            <option value="unreplied">⏳ Unreplied</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Date Filter -->
+                                    <div>
+                                        <select id="dateFilter" onchange="filterFeedbackByDate()" 
+                                                style="width: 100%; padding: 0.75rem; border: 1px solid #e9ecef; border-radius: 8px; background: white; font-size: 0.9rem; cursor: pointer; transition: all 0.3s ease; appearance: none; background-image: url('data:image/svg+xml;utf8,<svg fill="%23666" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>'); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1rem;">
+                                            <option value="">📅 All Time</option>
+                                            <option value="today">📆 Today</option>
+                                            <option value="week">📊 This Week</option>
+                                            <option value="month">📈 This Month</option>
+                                            <option value="year">📋 This Year</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <!-- Active Filters Display -->
+                                <div id="active-filters" style="margin-top: 1.5rem; display: none;">
+                                    <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                                        <span style="font-size: 0.9rem; color: #666; font-weight: 500;">Active filters:</span>
+                                        <div id="filter-tags" style="display: flex; gap: 0.5rem; flex-wrap: wrap;"></div>
+                                        <button onclick="clearAllFilters()" style="background: none; border: none; color: #dc3545; font-size: 0.9rem; cursor: pointer; text-decoration: underline; font-weight: 500; padding: 0.25rem 0.5rem; border-radius: 4px; transition: all 0.2s ease;">
+                                            <i class="fas fa-times" style="margin-right: 0.25rem;"></i>Clear All
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
 
                             <div id="feedback-container">
                                 <?php foreach ($feedback as $item): ?>
-                                    <div class="feedback-item" data-feedback-text="<?php echo htmlspecialchars($item['feedback_text']); ?>" data-parent-name="<?php echo htmlspecialchars($item['parent_name']); ?>">
-                                        <div class="feedback-header">
-                                            <div class="feedback-meta">
-                                                <strong><?php echo htmlspecialchars($item['parent_name']); ?></strong>
-                                                <span class="text-muted">(<?php echo htmlspecialchars($item['parent_email']); ?>)</span>
-                                                <span class="sentiment-badge sentiment-<?php echo $item['sentiment_label'] ?? 'neutral'; ?>">
-                                                    <?php echo ucfirst($item['sentiment_label'] ?? 'neutral'); ?>
+                                    <div class="feedback-item" 
+                                         data-feedback-text="<?php echo htmlspecialchars($item['feedback_text']); ?>" 
+                                         data-parent-name="<?php echo htmlspecialchars($item['parent_name']); ?>"
+                                         data-sentiment="<?php echo $item['sentiment_label'] ?? 'neutral'; ?>"
+                                         data-has-replies="<?php echo !empty($item['replies']) ? 'true' : 'false'; ?>"
+                                         data-date="<?php echo $item['created_at']; ?>"
+                                         style="background: white; border: 1px solid #e9ecef; border-radius: 8px; margin-bottom: 1.5rem; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                        
+                                        <div class="feedback-header" style="padding: 1rem; background: #f8f9fa; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center;">
+                                            <div class="feedback-meta" style="display: flex; align-items: center; gap: 1rem;">
+                                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                                    <div style="width: 32px; height: 32px; background: #00704a; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 0.8rem;">
+                                                        <?php echo strtoupper(substr($item['parent_name'], 0, 1)); ?>
+                                                    </div>
+                                                    <div>
+                                                        <strong style="color: #333; font-size: 1rem;"><?php echo htmlspecialchars($item['parent_name']); ?></strong>
+                                                        <div style="color: #6c757d; font-size: 0.85rem;"><?php echo htmlspecialchars($item['parent_email']); ?></div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <span class="sentiment-badge sentiment-<?php echo $item['sentiment_label'] ?? 'neutral'; ?>" 
+                                                      style="padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">
+                                                    <?php
+                                                        $sentimentIcon = '';
+                                                        switch ($item['sentiment_label']) {
+                                                            case 'positive':
+                                                                $sentimentIcon = '<i class="fas fa-thumbs-up"></i> ';
+                                                                break;
+                                                            case 'negative':
+                                                                $sentimentIcon = '<i class="fas fa-thumbs-down"></i> ';
+                                                                break;
+                                                            case 'neutral':
+                                                                $sentimentIcon = '<i class="fas fa-minus"></i> ';
+                                                                break;
+                                                        }
+                                                        echo $sentimentIcon . ucfirst($item['sentiment_label'] ?? 'neutral');
+                                                    ?>
                                                 </span>
+                                                
+                                                <?php if (!empty($item['replies'])): ?>
+                                                    <span style="background: #e3f2fd; color: #1976d2; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 500;">
+                                                        <i class="fas fa-reply"></i> Replied
+                                                    </span>
+                                                <?php endif; ?>
                                             </div>
-                                            <small class="text-muted"><?php echo date('M d, Y H:i', strtotime($item['created_at'])); ?></small>
+                                            
+                                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                                <small style="color: #6c757d; font-size: 0.85rem;">
+                                                    <i class="fas fa-clock"></i> <?php echo date('M d, Y H:i', strtotime($item['created_at'])); ?>
+                                                </small>
+                                                <button onclick="toggleFeedbackDetails(<?php echo $item['id']; ?>)" 
+                                                        class="btn-icon" 
+                                                        style="background: #6c757d; width: 32px; height: 32px; border-radius: 6px; border: none; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                                    <i class="fas fa-chevron-down" id="toggle-icon-<?php echo $item['id']; ?>"></i>
+                                                </button>
+                                            </div>
                                         </div>
 
-                                        <div class="feedback-content">
-                                            <div class="feedback-text">
+                                        <div class="feedback-content" id="feedback-content-<?php echo $item['id']; ?>" style="display: none; padding: 1rem;">
+                                            <?php if (isset($item['subject']) && $item['subject']): ?>
+                                                <div style="background: #e3f2fd; padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem; border-left: 4px solid #2196f3;">
+                                                    <strong style="color: #1976d2; font-size: 0.9rem;">Subject:</strong>
+                                                    <span style="color: #333; margin-left: 0.5rem;"><?php echo htmlspecialchars($item['subject']); ?></span>
+                                                </div>
+                                            <?php endif; ?>
+                                            
+                                            <?php if (isset($item['feedback_type']) && $item['feedback_type']): ?>
+                                                <div style="background: #fff3e0; padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem; border-left: 4px solid #ff9800;">
+                                                    <strong style="color: #f57c00; font-size: 0.9rem;">Type:</strong>
+                                                    <span style="color: #333; margin-left: 0.5rem; text-transform: capitalize;"><?php echo htmlspecialchars($item['feedback_type']); ?></span>
+                                                </div>
+                                            <?php endif; ?>
+                                            
+                                            <div class="feedback-text" style="background: #f8f9fa; padding: 1rem; border-radius: 6px; margin-bottom: 1rem; line-height: 1.6; color: #333;">
+                                                <strong style="color: #333; font-size: 0.9rem;">Message:</strong><br>
                                                 <?php echo nl2br(htmlspecialchars($item['feedback_text'])); ?>
                                             </div>
+                                            
+                                            <?php if (isset($item['suggestion']) && $item['suggestion']): ?>
+                                                <div style="background: #e8f5e9; padding: 1rem; border-radius: 6px; margin-bottom: 1rem; border-left: 4px solid #4caf50;">
+                                                    <strong style="color: #2e7d32; font-size: 0.9rem;">AI Suggestion:</strong><br>
+                                                    <span style="color: #333; line-height: 1.5;"><?php echo nl2br(htmlspecialchars($item['suggestion'])); ?></span>
+                                                </div>
+                                            <?php endif; ?>
 
                                             <?php if (!empty($item['replies'])): ?>
-                                                <div class="replies-section">
-                                                    <h6 style="padding: 0.75rem 1rem; margin: 0; background-color: #e9ecef; font-weight: 600;">
-                                                        <i class="fas fa-reply"></i> Admin Replies
+                                                <div class="replies-section" style="margin-bottom: 1rem;">
+                                                    <h6 style="padding: 0.75rem 1rem; margin: 0 0 1rem 0; background: linear-gradient(135deg, #e3f2fd, #bbdefb); color: #1976d2; font-weight: 600; border-radius: 6px; display: flex; align-items: center; gap: 0.5rem;">
+                                                        <i class="fas fa-reply"></i> Admin Replies (<?php echo count($item['replies']); ?>)
                                                     </h6>
                                                     <?php foreach ($item['replies'] as $reply): ?>
-                                                        <div class="reply-item">
-                                                            <div class="reply-meta">
+                                                        <div class="reply-item" style="background: white; border: 1px solid #e9ecef; border-radius: 6px; padding: 1rem; margin-bottom: 0.5rem;">
+                                                            <div class="reply-meta" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; color: #6c757d; font-size: 0.85rem;">
                                                                 <i class="fas fa-user-shield"></i> School Admin • <?php echo date('M d, Y H:i', strtotime($reply['reply_date'])); ?>
                                                             </div>
-                                                            <div><?php echo nl2br(htmlspecialchars($reply['reply_message'])); ?></div>
+                                                            <div style="color: #333; line-height: 1.5;"><?php echo nl2br(htmlspecialchars($reply['reply_message'])); ?></div>
                                                         </div>
                                                     <?php endforeach; ?>
                                                 </div>
                                             <?php endif; ?>
 
                                             <!-- Reply Form -->
-                                            <div class="reply-form">
-                                                <form method="POST" action="parents.php">
+                                            <div class="reply-form" style="background: #f8f9fa; padding: 1rem; border-radius: 6px;">
+                                                <form method="POST" action="parents.php" style="margin: 0;">
                                                     <input type="hidden" name="feedback_id" value="<?php echo $item['id']; ?>">
-                                                    <textarea name="reply_message" class="form-control" placeholder="Type your reply to this parent..." required></textarea>
-                                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
-                                                        <button type="submit" name="reply_feedback" class="btn btn-primary btn-sm">
-                                                            <i class="fas fa-reply"></i> Send Reply
+                                                    <div style="margin-bottom: 0.5rem;">
+                                                        <label style="font-weight: 500; color: #333; font-size: 0.9rem;">Reply to <?php echo htmlspecialchars($item['parent_name']); ?>:</label>
+                                                        <small style="color: #666; margin-left: 0.5rem;">
+                                                            <i class="fas fa-envelope"></i> Email will be sent to <?php echo htmlspecialchars($item['parent_email']); ?>
+                                                        </small>
+                                                    </div>
+                                                    <textarea name="reply_message" 
+                                                              class="form-control" 
+                                                              placeholder="Type your reply to this parent..." 
+                                                              required
+                                                              style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; resize: vertical; min-height: 80px; margin-bottom: 0.5rem;"></textarea>
+                                                    <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                                                        <button type="submit" name="reply_feedback" class="btn btn-primary btn-sm" style="background: #00704a; border: none; padding: 0.5rem 1rem; border-radius: 6px; color: white; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                                                            <i class="fas fa-reply"></i> Send Reply & Email
                                                         </button>
                                                     </div>
                                                 </form>
@@ -1828,19 +2028,13 @@ $conn->close();
                             <!-- Empty search results message -->
                             <div id="feedback-empty-search" class="empty-search-results" style="display: none;">
                                 <i class="fas fa-search"></i>
-                                <p>No feedback found matching your search.</p>
+                                <p>No feedback found matching your search criteria.</p>
                             </div>
                         <?php else: ?>
                             <div class="empty-state">
                                 <div class="empty-icon"><i class="fas fa-comment-slash"></i></div>
                                 <div class="empty-text">No feedback received yet</div>
-                                <p>Parent feedback and messages will appear here when submitted.</p>
-                                <?php if (count($parents) > 0): ?>
-                                    <br>
-                                    <a href="parents.php?add_sample_data=1" class="btn btn-secondary">
-                                        <i class="fas fa-plus"></i> Add Sample Feedback for Testing
-                                    </a>
-                                <?php endif; ?>
+                                <p>Parent feedback and messages will appear here when submitted through the parent portal.</p>
                             </div>
                         <?php endif; ?>
                     </div>
@@ -2197,6 +2391,118 @@ $conn->close();
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Feedback Management Styles */
+        .sentiment-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .sentiment-badge.sentiment-positive {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #4caf50;
+        }
+
+        .sentiment-badge.sentiment-negative {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #f44336;
+        }
+
+        .sentiment-badge.sentiment-neutral {
+            background: #fff3e0;
+            color: #f57c00;
+            border: 1px solid #ff9800;
+        }
+
+        .feedback-item {
+            transition: all 0.3s ease;
+        }
+
+        .feedback-item:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }
+
+        .feedback-header {
+            transition: background-color 0.3s ease;
+        }
+
+        .feedback-item:hover .feedback-header {
+            background: #e9ecef !important;
+        }
+
+        .reply-form textarea {
+            transition: border-color 0.3s ease;
+        }
+
+        .reply-form textarea:focus {
+            border-color: #00704a;
+            box-shadow: 0 0 0 0.2rem rgba(0, 112, 74, 0.25);
+        }
+
+        .feedback-stats .stat-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .feedback-stats .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+        }
+
+        /* Filter controls styling */
+        .filter-controls select {
+            transition: all 0.3s ease;
+        }
+
+        .filter-controls select:focus {
+            border-color: #00704a;
+            box-shadow: 0 0 0 0.2rem rgba(0, 112, 74, 0.25);
+        }
+
+        /* Responsive feedback layout */
+        @media (max-width: 768px) {
+            .feedback-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .feedback-filters .feedback-filters > div:first-child {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .feedback-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            
+            .feedback-meta {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .feedback-stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .feedback-filters {
+                padding: 1rem !important;
+            }
+            
+            .feedback-filters > div:first-child {
+                grid-template-columns: 1fr !important;
+            }
+        }
     </style>
 
     <!-- Include search.js for search functionality -->
@@ -2424,57 +2730,137 @@ $conn->close();
             }
         }
 
-        // Export feedback data function
-        function exportFeedbackData() {
-            const feedbackItems = document.querySelectorAll('.feedback-item:not([style*="display: none"])');
-
-            if (feedbackItems.length === 0) {
-                alert('No feedback to export');
-                return;
-            }
-
-            let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Parent Name,Email,Feedback,Sentiment,Date,Replies Count\n";
-
-            feedbackItems.forEach(item => {
-                const parentName = item.querySelector('.feedback-meta strong').textContent.trim();
-                const email = item.querySelector('.feedback-meta .text-muted').textContent.replace(/[()]/g, '').trim();
-                const feedback = item.querySelector('.feedback-text').textContent.trim();
-                const sentiment = item.querySelector('.sentiment-badge').textContent.trim();
-                const date = item.querySelector('.feedback-header small').textContent.trim();
-                const repliesCount = item.querySelectorAll('.reply-item').length;
-
-                const rowData = [parentName, email, feedback, sentiment, date, repliesCount];
-                csvContent += rowData.map(field => `"${field}"`).join(',') + '\n';
-            });
-
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement('a');
-            link.setAttribute('href', encodedUri);
-            link.setAttribute('download', 'parent_feedback.csv');
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        // Feedback search functionality
+        // Enhanced Feedback Management Functions
         function clearFeedbackSearch() {
             const searchInput = document.querySelector('#feedback-tab .search-input');
             searchInput.value = '';
-            filterFeedback('');
+            searchInput.focus();
+            applyFeedbackFilters();
         }
 
         function filterFeedback(searchTerm) {
+            // This function is now handled by applyFeedbackFilters()
+            applyFeedbackFilters();
+        }
+
+        function filterFeedbackBySentiment() {
+            applyFeedbackFilters();
+        }
+
+        function filterFeedbackByReply() {
+            applyFeedbackFilters();
+        }
+
+        function filterFeedbackByDate() {
+            applyFeedbackFilters();
+        }
+
+        function clearAllFilters() {
+            // Clear all filter inputs
+            document.querySelector('#feedback-tab .search-input').value = '';
+            document.getElementById('sentimentFilter').value = '';
+            document.getElementById('replyFilter').value = '';
+            document.getElementById('dateFilter').value = '';
+            
+            // Apply filters (which will show all items)
+            applyFeedbackFilters();
+            
+            // Hide active filters display
+            document.getElementById('active-filters').style.display = 'none';
+        }
+
+        function updateActiveFiltersDisplay() {
+            const searchTerm = document.querySelector('#feedback-tab .search-input').value;
+            const sentimentFilter = document.getElementById('sentimentFilter').value;
+            const replyFilter = document.getElementById('replyFilter').value;
+            const dateFilter = document.getElementById('dateFilter').value;
+            
+            const activeFilters = [];
+            
+            if (searchTerm) activeFilters.push(`Search: "${searchTerm}"`);
+            if (sentimentFilter) activeFilters.push(`Sentiment: ${sentimentFilter}`);
+            if (replyFilter) activeFilters.push(`Status: ${replyFilter}`);
+            if (dateFilter) activeFilters.push(`Date: ${dateFilter}`);
+            
+            const activeFiltersDiv = document.getElementById('active-filters');
+            const filterTagsDiv = document.getElementById('filter-tags');
+            
+            if (activeFilters.length > 0) {
+                filterTagsDiv.innerHTML = activeFilters.map(filter => 
+                    `<span style="background: #e3f2fd; color: #1976d2; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem; font-weight: 500;">${filter}</span>`
+                ).join('');
+                activeFiltersDiv.style.display = 'block';
+            } else {
+                activeFiltersDiv.style.display = 'none';
+            }
+        }
+
+        function applyFeedbackFilters() {
+            const searchTerm = document.querySelector('#feedback-tab .search-input').value.toLowerCase();
+            const sentimentFilter = document.getElementById('sentimentFilter').value;
+            const replyFilter = document.getElementById('replyFilter').value;
+            const dateFilter = document.getElementById('dateFilter').value;
+            
             const feedbackItems = document.querySelectorAll('.feedback-item');
             const emptyMessage = document.getElementById('feedback-empty-search');
             let visibleCount = 0;
 
             feedbackItems.forEach(item => {
-                const feedbackText = item.getAttribute('data-feedback-text').toLowerCase();
-                const parentName = item.getAttribute('data-parent-name').toLowerCase();
-                const searchLower = searchTerm.toLowerCase();
+                let shouldShow = true;
 
-                if (feedbackText.includes(searchLower) || parentName.includes(searchLower)) {
+                // Search filter
+                if (searchTerm) {
+                    const feedbackText = item.getAttribute('data-feedback-text').toLowerCase();
+                    const parentName = item.getAttribute('data-parent-name').toLowerCase();
+                    if (!feedbackText.includes(searchTerm) && !parentName.includes(searchTerm)) {
+                        shouldShow = false;
+                    }
+                }
+
+                // Sentiment filter
+                if (sentimentFilter && shouldShow) {
+                    const sentiment = item.getAttribute('data-sentiment');
+                    if (sentiment !== sentimentFilter) {
+                        shouldShow = false;
+                    }
+                }
+
+                // Reply filter
+                if (replyFilter && shouldShow) {
+                    const hasReplies = item.getAttribute('data-has-replies');
+                    if (replyFilter === 'replied' && hasReplies !== 'true') {
+                        shouldShow = false;
+                    } else if (replyFilter === 'unreplied' && hasReplies !== 'false') {
+                        shouldShow = false;
+                    }
+                }
+
+                // Date filter
+                if (dateFilter && shouldShow) {
+                    const feedbackDate = new Date(item.getAttribute('data-date'));
+                    const now = new Date();
+                    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    const monthAgo = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+                    const yearAgo = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
+
+                    switch (dateFilter) {
+                        case 'today':
+                            if (feedbackDate < today) shouldShow = false;
+                            break;
+                        case 'week':
+                            if (feedbackDate < weekAgo) shouldShow = false;
+                            break;
+                        case 'month':
+                            if (feedbackDate < monthAgo) shouldShow = false;
+                            break;
+                        case 'year':
+                            if (feedbackDate < yearAgo) shouldShow = false;
+                            break;
+                    }
+                }
+
+                if (shouldShow) {
                     item.style.display = 'block';
                     visibleCount++;
                 } else {
@@ -2482,12 +2868,52 @@ $conn->close();
                 }
             });
 
+            // Update active filters display
+            updateActiveFiltersDisplay();
+
             // Show/hide empty message
-            if (visibleCount === 0 && searchTerm !== '') {
+            if (visibleCount === 0) {
                 emptyMessage.style.display = 'block';
+                emptyMessage.innerHTML = `
+                    <i class="fas fa-search"></i>
+                    <p>No feedback found matching your search criteria.</p>
+                `;
             } else {
                 emptyMessage.style.display = 'none';
             }
+        }
+
+        function toggleFeedbackDetails(feedbackId) {
+            const content = document.getElementById(`feedback-content-${feedbackId}`);
+            const icon = document.getElementById(`toggle-icon-${feedbackId}`);
+            
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                icon.className = 'fas fa-chevron-up';
+            } else {
+                content.style.display = 'none';
+                icon.className = 'fas fa-chevron-down';
+            }
+        }
+
+        function showFullResponse(responseText) {
+            const modalContent = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;" onclick="this.remove()">
+                    <div style="background: white; padding: 2rem; border-radius: 8px; max-width: 600px; width: 90%; max-height: 80%; overflow-y: auto;" onclick="event.stopPropagation()">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #eee;">
+                            <h3 style="margin: 0; color: #00704a;"><i class="fas fa-comment"></i> Full Response</h3>
+                            <button onclick="this.closest('div[style*=\"position: fixed\"]').remove()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666;">&times;</button>
+                        </div>
+                        <div style="line-height: 1.6; color: #333;">
+                            ${responseText.replace(/\n/g, '<br>')}
+                        </div>
+                        <div style="margin-top: 1.5rem; text-align: right;">
+                            <button onclick="this.closest('div[style*=\"position: fixed\"]').remove()" style="background: #6c757d; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;">Close</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalContent);
         }
 
         // Function to open modal
@@ -2527,12 +2953,36 @@ $conn->close();
                 });
             });
 
-            // Add feedback search functionality
+            // Add enhanced feedback search functionality
             const feedbackSearchInput = document.querySelector('#feedback-tab .search-input');
             if (feedbackSearchInput) {
                 feedbackSearchInput.addEventListener('input', function() {
-                    filterFeedback(this.value);
+                    applyFeedbackFilters();
                 });
+                
+                // Add focus and blur effects
+                feedbackSearchInput.addEventListener('focus', function() {
+                    this.parentElement.style.boxShadow = '0 0 0 0.2rem rgba(0, 112, 74, 0.25)';
+                });
+                
+                feedbackSearchInput.addEventListener('blur', function() {
+                    this.parentElement.style.boxShadow = 'none';
+                });
+            }
+
+            // Add event listeners for filter controls
+            const sentimentFilter = document.getElementById('sentimentFilter');
+            const replyFilter = document.getElementById('replyFilter');
+            const dateFilter = document.getElementById('dateFilter');
+
+            if (sentimentFilter) {
+                sentimentFilter.addEventListener('change', applyFeedbackFilters);
+            }
+            if (replyFilter) {
+                replyFilter.addEventListener('change', applyFeedbackFilters);
+            }
+            if (dateFilter) {
+                dateFilter.addEventListener('change', applyFeedbackFilters);
             }
         });
 

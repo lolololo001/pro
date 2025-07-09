@@ -25,7 +25,7 @@ if (empty($school_info)) {
             <?php endif; ?>
         </div>
         <a href="dashboard.php" class="sidebar-logo">
-            <?php echo htmlspecialchars($school_info['name'] ?? 'School'); ?><span>.</span>
+            <?php echo htmlspecialchars($school_info['name'] ?? 'School'); ?>
         </a>
     </div>
     
@@ -63,10 +63,6 @@ if (empty($school_info)) {
         </div>        <div class="menu-item <?php echo basename($_SERVER['PHP_SELF']) == 'parents.php' ? 'active' : ''; ?>">
             <i class="fas fa-users"></i>
             <a href="parents.php"><span>Parents</span></a>
-        </div>
-        <div class="menu-item <?php echo basename($_SERVER['PHP_SELF']) == 'parent_feedback.php' ? 'active' : ''; ?>">
-            <i class="fas fa-comment-dots"></i>
-            <a href="parent_feedback.php"><span>Parent Feedback</span></a>
         </div>
         <div class="menu-item <?php echo basename($_SERVER['PHP_SELF']) == 'permissions.php' ? 'active' : ''; ?>">
             <i class="fas fa-clipboard-check"></i>

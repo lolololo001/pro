@@ -57,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Start transaction
         $conn->begin_transaction();
 
-        // Create announcements table if it doesn't exist with simplified fields
+        // Create announcements table if it doesn't exist with target_group
         $conn->query("CREATE TABLE IF NOT EXISTS announcements (
             id INT AUTO_INCREMENT PRIMARY KEY,
             school_id INT NOT NULL,
@@ -66,22 +66,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             publish_date DATE NOT NULL,
             expiry_date DATE,
             priority ENUM('low', 'medium', 'high') NOT NULL DEFAULT 'medium',
+            target_group ENUM('all', 'parents', 'students', 'teachers', 'staff') NOT NULL DEFAULT 'all',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (school_id) REFERENCES schools(id) ON DELETE CASCADE
         )");
 
-        // Insert the announcement
-        $stmt = $conn->prepare("INSERT INTO announcements (school_id, title, content, publish_date, expiry_date, priority) VALUES (?, ?, ?, ?, ?, ?)");
-        
-        // Handle null expiry date
+        // Insert the announcement with target_group
+        $stmt = $conn->prepare("INSERT INTO announcements (school_id, title, content, publish_date, expiry_date, priority, target_group) VALUES (?, ?, ?, ?, ?, ?, ?)");
         $expiry = empty($expiry_date) ? null : $expiry_date;
-        
-        $stmt->bind_param('isssss', $school_id, $title, $content, $publish_date, $expiry, $priority);
-        
+        $target_group = trim($_POST['target_group'] ?? 'all');
+        $stmt->bind_param('issssss', $school_id, $title, $content, $publish_date, $expiry, $priority, $target_group);
         if (!$stmt->execute()) {
             throw new Exception("Failed to publish announcement.");
         }
-          $stmt->close();
+        $stmt->close();
         $conn->commit();
         
         echo json_encode([

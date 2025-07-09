@@ -208,7 +208,7 @@ if (isset($_GET['search']) && !empty($_GET['search'])) {
 <body>
     <header>
         <div class="container header-container">
-            <a href="index.php" class="logo"><?php echo APP_NAME; ?><span>.</span></a>
+            <a href="index.php" class="logo"><?php echo APP_NAME; ?></a>
         </div>
     </header>
 

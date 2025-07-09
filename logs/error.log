@@ -22980,3 +22980,378 @@ Stack trace:
 [06-Jul-2025 23:38:32 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
 [06-Jul-2025 23:38:32 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
 [06-Jul-2025 23:38:32 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[06-Jul-2025 23:54:00 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[06-Jul-2025 23:54:00 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[06-Jul-2025 23:54:00 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[06-Jul-2025 23:54:00 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[06-Jul-2025 23:54:00 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[06-Jul-2025 23:54:00 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[06-Jul-2025 23:54:00 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[06-Jul-2025 23:54:00 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[06-Jul-2025 23:54:00 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[06-Jul-2025 23:54:32 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[06-Jul-2025 23:54:32 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[06-Jul-2025 23:54:32 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[06-Jul-2025 23:54:32 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[06-Jul-2025 23:54:32 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[06-Jul-2025 23:54:32 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[06-Jul-2025 23:54:32 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[06-Jul-2025 23:54:32 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[06-Jul-2025 23:54:32 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[06-Jul-2025 23:56:59 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[06-Jul-2025 23:56:59 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[06-Jul-2025 23:56:59 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[06-Jul-2025 23:56:59 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[06-Jul-2025 23:56:59 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[06-Jul-2025 23:56:59 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[06-Jul-2025 23:56:59 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[06-Jul-2025 23:56:59 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[06-Jul-2025 23:56:59 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[06-Jul-2025 23:57:02 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[06-Jul-2025 23:59:14 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[06-Jul-2025 23:59:14 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[07-Jul-2025 00:00:01 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 08:42:23 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 08:42:23 UTC] Error fetching parents: Unknown column 'school_id' in 'where clause'
+[08-Jul-2025 08:42:26 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 08:43:47 UTC] Input values: department_id=5, class_id=9, dob='2010-11-11'
+[08-Jul-2025 08:43:47 UTC] SQL Query: INSERT INTO students (school_id, first_name, last_name, department_id, class_id, gender, dob, parent_name, parent_phone, parent_email, address, reg_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+[08-Jul-2025 08:43:47 UTC] Before bind_param: 
+[08-Jul-2025 08:43:47 UTC] Execute result: success
+[08-Jul-2025 08:43:47 UTC] Student added successfully with ID: 95 and registration number: 2025/094
+[08-Jul-2025 08:43:47 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'name' in 'field list' in C:\xampp\htdocs\pro\school-admin\add_student.php:259
+Stack trace:
+#0 C:\xampp\htdocs\pro\school-admin\add_student.php(259): mysqli->prepare('SELECT name FRO...')
+#1 {main}
+  thrown in C:\xampp\htdocs\pro\school-admin\add_student.php on line 259
+[08-Jul-2025 08:43:52 UTC] Input values: department_id=5, class_id=9, dob='2010-11-11'
+[08-Jul-2025 08:43:53 UTC] Email API send error: Could not resolve host: your-email-api-endpoint.example
+[08-Jul-2025 08:43:53 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 09:00:00 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 09:00:42 UTC] Input values: department_id=NULL, class_id=6, dob='1111-11-11'
+[08-Jul-2025 09:00:42 UTC] SQL Query: INSERT INTO students (school_id, first_name, last_name, department_id, class_id, gender, dob, parent_name, parent_phone, parent_email, address, reg_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+[08-Jul-2025 09:00:42 UTC] Before bind_param: 
+[08-Jul-2025 09:00:42 UTC] Execute result: success
+[08-Jul-2025 09:00:42 UTC] Student added successfully with ID: 96 and registration number: 2025/096
+[08-Jul-2025 09:00:42 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'name' in 'field list' in C:\xampp\htdocs\pro\school-admin\add_student.php:259
+Stack trace:
+#0 C:\xampp\htdocs\pro\school-admin\add_student.php(259): mysqli->prepare('SELECT name FRO...')
+#1 {main}
+  thrown in C:\xampp\htdocs\pro\school-admin\add_student.php on line 259
+[08-Jul-2025 09:00:42 UTC] Input values: department_id=NULL, class_id=6, dob='1111-11-11'
+[08-Jul-2025 09:00:43 UTC] Email API send error: Could not resolve host: your-email-api-endpoint.example
+[08-Jul-2025 09:00:43 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 09:12:02 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 09:13:08 UTC] Input values: department_id=NULL, class_id=9, dob='111111-11-11'
+[08-Jul-2025 09:13:08 UTC] SQL Query: INSERT INTO students (school_id, first_name, last_name, department_id, class_id, gender, dob, parent_name, parent_phone, parent_email, address, reg_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+[08-Jul-2025 09:13:08 UTC] Before bind_param: 
+[08-Jul-2025 09:13:08 UTC] Execute result: success
+[08-Jul-2025 09:13:08 UTC] Student added successfully with ID: 97 and registration number: 2025/097
+[08-Jul-2025 09:13:08 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'name' in 'field list' in C:\xampp\htdocs\pro\school-admin\add_student.php:259
+Stack trace:
+#0 C:\xampp\htdocs\pro\school-admin\add_student.php(259): mysqli->prepare('SELECT name FRO...')
+#1 {main}
+  thrown in C:\xampp\htdocs\pro\school-admin\add_student.php on line 259
+[08-Jul-2025 09:13:18 UTC] Input values: department_id=NULL, class_id=9, dob='111111-11-11'
+[08-Jul-2025 09:13:18 UTC] Email API send error: Could not resolve host: your-email-api-endpoint.example
+[08-Jul-2025 09:13:18 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 09:15:43 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 09:16:24 UTC] Input values: department_id=1, class_id=11, dob='2001-12-12'
+[08-Jul-2025 09:16:25 UTC] SQL Query: INSERT INTO students (school_id, first_name, last_name, department_id, class_id, gender, dob, parent_name, parent_phone, parent_email, address, reg_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+[08-Jul-2025 09:16:25 UTC] Before bind_param: 
+[08-Jul-2025 09:16:25 UTC] Execute result: success
+[08-Jul-2025 09:16:25 UTC] Student added successfully with ID: 98 and registration number: 2025/098
+[08-Jul-2025 09:16:25 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'name' in 'field list' in C:\xampp\htdocs\pro\school-admin\add_student.php:259
+Stack trace:
+#0 C:\xampp\htdocs\pro\school-admin\add_student.php(259): mysqli->prepare('SELECT name FRO...')
+#1 {main}
+  thrown in C:\xampp\htdocs\pro\school-admin\add_student.php on line 259
+[08-Jul-2025 09:16:29 UTC] Input values: department_id=1, class_id=11, dob='2001-12-12'
+[08-Jul-2025 09:16:29 UTC] Email API send error: Could not resolve host: your-email-api-endpoint.example
+[08-Jul-2025 09:16:29 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 09:16:36 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 09:17:17 UTC] Input values: department_id=NULL, class_id=8, dob='2002-10-10'
+[08-Jul-2025 09:17:17 UTC] SQL Query: INSERT INTO students (school_id, first_name, last_name, department_id, class_id, gender, dob, parent_name, parent_phone, parent_email, address, reg_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+[08-Jul-2025 09:17:17 UTC] Before bind_param: 
+[08-Jul-2025 09:17:17 UTC] Execute result: success
+[08-Jul-2025 09:17:17 UTC] Student added successfully with ID: 99 and registration number: 2025/099
+[08-Jul-2025 09:17:17 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'name' in 'field list' in C:\xampp\htdocs\pro\school-admin\add_student.php:259
+Stack trace:
+#0 C:\xampp\htdocs\pro\school-admin\add_student.php(259): mysqli->prepare('SELECT name FRO...')
+#1 {main}
+  thrown in C:\xampp\htdocs\pro\school-admin\add_student.php on line 259
+[08-Jul-2025 09:17:22 UTC] Input values: department_id=NULL, class_id=8, dob='2002-10-10'
+[08-Jul-2025 09:17:22 UTC] Email API send error: Could not resolve host: your-email-api-endpoint.example
+[08-Jul-2025 09:17:22 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 09:21:06 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 09:22:47 UTC] Input values: department_id=5, class_id=15, dob='20001-02-01'
+[08-Jul-2025 09:22:47 UTC] SQL Query: INSERT INTO students (school_id, first_name, last_name, department_id, class_id, gender, dob, parent_name, parent_phone, parent_email, address, reg_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+[08-Jul-2025 09:22:47 UTC] Before bind_param: 
+[08-Jul-2025 09:22:47 UTC] Execute result: success
+[08-Jul-2025 09:22:47 UTC] Student added successfully with ID: 100 and registration number: 2025/100
+[08-Jul-2025 09:22:47 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'name' in 'field list' in C:\xampp\htdocs\pro\school-admin\add_student.php:259
+Stack trace:
+#0 C:\xampp\htdocs\pro\school-admin\add_student.php(259): mysqli->prepare('SELECT name FRO...')
+#1 {main}
+  thrown in C:\xampp\htdocs\pro\school-admin\add_student.php on line 259
+[08-Jul-2025 09:22:53 UTC] Input values: department_id=5, class_id=15, dob='20001-02-01'
+[08-Jul-2025 09:22:53 UTC] Email API send error: Could not resolve host: your-email-api-endpoint.example
+[08-Jul-2025 09:22:53 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 09:34:10 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 09:34:15 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 09:34:23 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 09:34:59 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 09:35:01 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 09:35:06 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 09:35:19 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 09:35:53 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 09:36:01 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 10:02:59 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 10:02:59 UTC] Error fetching parents: Unknown column 'school_id' in 'where clause'
+[08-Jul-2025 10:04:29 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 10:04:32 UTC] PHP Warning:  Undefined array key "first_name" in C:\xampp\htdocs\pro\school-admin\teachers.php on line 748
+[08-Jul-2025 10:04:32 UTC] PHP Warning:  Undefined array key "last_name" in C:\xampp\htdocs\pro\school-admin\teachers.php on line 748
+[08-Jul-2025 10:04:32 UTC] PHP Warning:  Undefined array key "first_name" in C:\xampp\htdocs\pro\school-admin\teachers.php on line 751
+[08-Jul-2025 10:04:32 UTC] PHP Warning:  Undefined array key "last_name" in C:\xampp\htdocs\pro\school-admin\teachers.php on line 751
+[08-Jul-2025 10:04:32 UTC] PHP Warning:  Undefined array key "first_name" in C:\xampp\htdocs\pro\school-admin\teachers.php on line 757
+[08-Jul-2025 10:04:32 UTC] PHP Warning:  Undefined array key "last_name" in C:\xampp\htdocs\pro\school-admin\teachers.php on line 757
+[08-Jul-2025 10:04:32 UTC] PHP Warning:  Undefined array key "first_name" in C:\xampp\htdocs\pro\school-admin\teachers.php on line 760
+[08-Jul-2025 10:04:32 UTC] PHP Warning:  Undefined array key "last_name" in C:\xampp\htdocs\pro\school-admin\teachers.php on line 760
+[08-Jul-2025 10:04:39 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 10:11:37 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 10:11:37 UTC] Error fetching parents: Unknown column 'school_id' in 'where clause'
+[08-Jul-2025 10:11:39 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 10:11:39 UTC] Error fetching parents: Unknown column 'school_id' in 'where clause'
+[08-Jul-2025 10:23:54 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 10:24:40 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 10:30:01 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 10:30:02 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 10:30:28 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 10:30:28 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 10:30:28 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 10:30:29 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 10:30:29 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 10:30:29 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 10:30:29 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 10:30:29 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 10:30:30 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 10:34:54 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 10:34:55 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 10:36:49 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 10:39:09 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 10:39:56 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 10:39:58 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 10:40:25 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 10:41:43 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 10:41:44 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 10:45:34 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 10:47:28 UTC] Error processing announcement: Unknown column 'target_group' in 'field list'
+[08-Jul-2025 10:54:43 UTC] Error processing announcement: Unknown column 'target_group' in 'field list'
+[08-Jul-2025 10:56:04 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 11:09:16 UTC] Error processing announcement: Unknown column 'target_group' in 'field list'
+[08-Jul-2025 15:39:27 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 15:44:50 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 17:11:49 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 17:13:31 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 17:18:15 UTC] PHP Warning:  Undefined array key "system_admin_name" in C:\xampp\htdocs\pro\admin\dashboard.php on line 18
+[08-Jul-2025 17:25:22 UTC] PHP Warning:  Undefined array key "system_admin_name" in C:\xampp\htdocs\pro\admin\dashboard.php on line 18
+[08-Jul-2025 17:26:09 UTC] PHP Warning:  Undefined array key "system_admin_name" in C:\xampp\htdocs\pro\admin\dashboard.php on line 18
+[08-Jul-2025 17:35:51 UTC] PHP Warning:  Undefined array key "system_admin_name" in C:\xampp\htdocs\pro\admin\dashboard.php on line 18
+[08-Jul-2025 17:36:05 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 17:37:18 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 17:38:37 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 17:57:26 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[08-Jul-2025 18:16:35 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 18:16:35 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 18:16:35 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 18:16:35 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 18:16:35 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 18:16:35 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 18:16:35 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 18:16:35 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 18:16:35 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 18:18:47 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 18:18:47 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 18:18:47 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 18:18:47 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 18:18:47 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 18:18:47 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 18:18:47 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 18:18:47 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 18:18:47 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 18:18:50 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 18:18:50 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 18:19:03 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 18:19:03 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 18:19:05 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 18:19:05 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 18:21:32 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 18:21:32 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 18:21:34 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 18:21:34 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 18:35:01 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 18:35:01 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 18:39:30 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 18:39:30 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 18:39:40 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 18:39:40 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 18:46:35 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 18:46:35 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 19:15:25 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 19:15:25 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 19:15:25 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 19:15:25 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 19:15:25 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 19:15:25 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 19:15:25 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 19:15:25 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 19:15:25 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 19:16:16 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 19:16:16 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 19:16:16 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 19:16:16 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 19:16:16 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 19:16:16 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 19:16:16 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 19:16:16 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 19:16:16 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 19:17:37 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 19:17:37 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 19:20:48 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 19:20:48 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 19:20:48 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 19:20:48 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 19:20:48 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 19:20:48 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 19:20:48 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 19:20:48 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 19:20:48 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 20:19:28 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 20:19:28 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 20:19:28 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 20:19:28 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 20:19:28 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 20:19:28 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 20:19:28 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 20:19:28 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 20:19:28 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 22:10:01 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 22:10:01 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 22:10:01 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 22:10:01 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 22:10:01 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 22:10:01 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 22:10:01 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 22:10:01 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 22:10:01 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 22:10:04 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 22:10:04 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 22:10:04 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 22:10:04 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 22:10:04 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 22:10:04 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 22:10:04 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 22:10:04 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 22:10:04 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\school-admin\permissions.php on line 1367
+[08-Jul-2025 22:10:07 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 22:10:07 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 22:10:37 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 22:10:37 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 22:10:55 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'name' in 'field list' in C:\xampp\htdocs\pro\school-admin\parents.php:48
+Stack trace:
+#0 C:\xampp\htdocs\pro\school-admin\parents.php(48): mysqli->query('SELECT id, name...')
+#1 {main}
+  thrown in C:\xampp\htdocs\pro\school-admin\parents.php on line 48
+[08-Jul-2025 22:11:11 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 22:11:11 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 22:20:09 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 22:20:09 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 22:25:38 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 22:25:38 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 22:26:57 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 22:26:57 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 22:28:56 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 22:28:56 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 22:41:04 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 22:41:04 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 22:44:51 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 22:44:51 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 22:49:23 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 22:49:23 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 22:50:27 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 22:50:27 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 23:01:40 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 23:01:40 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 23:01:43 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 23:01:43 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 23:04:51 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 23:04:51 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 23:07:10 UTC] Attempting to send feedback reply email to: uwalaurene250@gmail.com
+[08-Jul-2025 23:07:10 UTC] Attempting to send feedback reply email to: uwalaurene250@gmail.com
+[08-Jul-2025 23:07:14 UTC] Feedback reply email sent successfully to: uwalaurene250@gmail.com
+[08-Jul-2025 23:07:14 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 23:07:14 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 23:09:42 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 23:09:42 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 23:10:13 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 23:10:13 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 23:22:04 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 23:22:04 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 23:32:49 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 23:32:49 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 23:39:02 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 23:39:02 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 23:41:20 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 23:41:20 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 23:48:25 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 23:48:25 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 23:49:13 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 23:49:13 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 23:49:25 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 23:49:25 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 23:57:46 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[08-Jul-2025 23:57:46 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[09-Jul-2025 00:02:57 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[09-Jul-2025 00:02:57 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[09-Jul-2025 00:08:58 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[09-Jul-2025 00:08:58 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[09-Jul-2025 00:16:30 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[09-Jul-2025 00:16:30 UTC] Error in children query: Unknown column 'sp.created_at' in 'field list'
+[09-Jul-2025 00:20:43 UTC] Error fetching recent students: Unknown column 'admission_number' in 'field list'
+[09-Jul-2025 01:21:16 UTC] Error fetching assigned classes: Unknown column 'c.department_id' in 'on clause'
+[09-Jul-2025 01:22:44 UTC] Error fetching assigned classes: Unknown column 'c.department_id' in 'on clause'
+[09-Jul-2025 01:23:10 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\teacher\marks.php on line 779
+[09-Jul-2025 01:23:10 UTC] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\pro\teacher\marks.php on line 779
+[09-Jul-2025 01:23:20 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\teacher\marks.php on line 779
+[09-Jul-2025 01:23:20 UTC] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\pro\teacher\marks.php on line 779
+[09-Jul-2025 01:23:20 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\teacher\marks.php on line 779
+[09-Jul-2025 01:23:20 UTC] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\pro\teacher\marks.php on line 779
+[09-Jul-2025 01:23:20 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\teacher\marks.php on line 779
+[09-Jul-2025 01:23:20 UTC] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\pro\teacher\marks.php on line 779
+[09-Jul-2025 01:23:29 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\teacher\marks.php on line 779
+[09-Jul-2025 01:23:29 UTC] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\pro\teacher\marks.php on line 779
+[09-Jul-2025 01:23:33 UTC] Error fetching marks: Unknown column 's.admission_number' in 'field list'
+[09-Jul-2025 01:23:33 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\teacher\marks.php on line 779
+[09-Jul-2025 01:23:33 UTC] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\pro\teacher\marks.php on line 779
+[09-Jul-2025 01:24:41 UTC] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in C:\xampp\htdocs\pro\teacher\marks.php:65
+Stack trace:
+#0 C:\xampp\htdocs\pro\teacher\marks.php(65): mysqli_stmt->bind_param('isddssi', 68, 'food problems', 70.0, 100.0, 'Mid Term', 2025, 'you're competen...', 1)
+#1 {main}
+  thrown in C:\xampp\htdocs\pro\teacher\marks.php on line 65
+[09-Jul-2025 01:25:06 UTC] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in C:\xampp\htdocs\pro\teacher\marks.php:65
+Stack trace:
+#0 C:\xampp\htdocs\pro\teacher\marks.php(65): mysqli_stmt->bind_param('isddssi', 68, 'food problems', 70.0, 100.0, 'Mid Term', 2025, 'you're competen...', 1)
+#1 {main}
+  thrown in C:\xampp\htdocs\pro\teacher\marks.php on line 65
+[09-Jul-2025 01:25:19 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\teacher\attendance.php on line 898
+[09-Jul-2025 01:25:19 UTC] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\pro\teacher\attendance.php on line 898
+[09-Jul-2025 01:26:04 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\teacher\attendance.php on line 898
+[09-Jul-2025 01:26:04 UTC] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\pro\teacher\attendance.php on line 898
+[09-Jul-2025 01:26:22 UTC] Error fetching assigned classes: Unknown column 'c.department_id' in 'on clause'
+[09-Jul-2025 01:26:35 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\teacher\marks.php on line 779
+[09-Jul-2025 01:26:35 UTC] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\pro\teacher\marks.php on line 779
+[09-Jul-2025 01:26:39 UTC] Error fetching marks: Unknown column 's.admission_number' in 'field list'
+[09-Jul-2025 01:26:39 UTC] PHP Warning:  Undefined array key "admission_number" in C:\xampp\htdocs\pro\teacher\marks.php on line 779
+[09-Jul-2025 01:26:39 UTC] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\pro\teacher\marks.php on line 779
+[09-Jul-2025 01:28:51 UTC] Error fetching assigned classes: Unknown column 'c.department_id' in 'on clause'
+[09-Jul-2025 01:29:12 UTC] Error fetching students: Unknown column 'c.department_id' in 'on clause'

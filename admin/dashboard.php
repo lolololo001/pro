@@ -68,6 +68,15 @@ if ($result) {
     }
 }
 
+// Fetch latest 5 contact messages
+$contactMessages = [];
+$result = $conn->query("SELECT id, name, email, subject, message, created_at FROM contact_messages ORDER BY created_at DESC LIMIT 5");
+if ($result) {
+    while ($row = $result->fetch_assoc()) {
+        $contactMessages[] = $row;
+    }
+}
+
 // Close database connection
 $conn->close();
 ?>
@@ -540,6 +549,52 @@ $conn->close();
                 grid-template-columns: 1fr;
             }
         }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+        @media (max-width: 900px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .dashboard-card {
+            background-color: var(--light-color);
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .dashboard-card h2 {
+            font-size: 1.2rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+        .contact-message {
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 0;
+        }
+        .contact-message:last-child {
+            border-bottom: none;
+        }
+        .contact-message .meta {
+            font-size: 0.95rem;
+            color: #666;
+            margin-bottom: 0.3rem;
+        }
+        .contact-message .subject {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        .contact-message .body {
+            margin: 0.5rem 0 0.2rem 0;
+            color: #222;
+        }
+        .contact-message .date {
+            font-size: 0.85rem;
+            color: #aaa;
+        }
     </style>
 </head>
 <body>
@@ -643,51 +698,67 @@ $conn->close();
             </div>
         </div>
         
-        <!-- Recent Schools -->
-        <div class="card">
-            <div class="card-header">
-                <h2>Recent School Registrations</h2>
-                <a href="schools.php">View All</a>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>School Name</th>
-                                <th>Email</th>
-                                <th>Phone</th>
-                                <th>Registration Date</th>
-                                <th>Status</th>
-                                
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (empty($recentSchools)): ?>
+        <div class="dashboard-grid">
+            <div>
+                <div class="dashboard-card">
+                    <h2>Recent School Registrations</h2>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
                                 <tr>
-                                    <td colspan="6" style="text-align: center;">No schools found</td>
+                                    <th>School Name</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Registration Date</th>
+                                    <th>Status</th>
                                 </tr>
-                            <?php else: ?>
-                                <?php foreach ($recentSchools as $school): ?>
+                            </thead>
+                            <tbody>
+                                <?php if (empty($recentSchools)): ?>
                                     <tr>
-                                        <td><?php echo htmlspecialchars($school['name']); ?></td>
-                                        <td><?php echo htmlspecialchars($school['email']); ?></td>
-                                        <td><?php echo htmlspecialchars($school['phone']); ?></td>
-                                        <td><?php echo formatDate($school['registration_date']); ?></td>
-                                        <td>
-                                            <?php if ($school['status'] === 'active'): ?>
-                                                <span class="status-badge status-active">Active</span>
-                                            <?php elseif ($school['status'] === 'pending'): ?>
-                                                <span class="status-badge status-pending">Pending</span>
-                                            <?php else: ?>
-                                                <span class="status-badge status-inactive">Inactive</span>
-                                            <?php endif; ?>
-                                        </td>
+                                        <td colspan="5" style="text-align: center;">No schools found</td>
                                     </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
+                                <?php else: ?>
+                                    <?php foreach ($recentSchools as $school): ?>
+                                        <tr>
+                                            <td><?php echo htmlspecialchars($school['name']); ?></td>
+                                            <td><?php echo htmlspecialchars($school['email']); ?></td>
+                                            <td><?php echo htmlspecialchars($school['phone']); ?></td>
+                                            <td><?php echo formatDate($school['registration_date']); ?></td>
+                                            <td>
+                                                <?php if ($school['status'] === 'active'): ?>
+                                                    <span class="status-badge status-active">Active</span>
+                                                <?php elseif ($school['status'] === 'pending'): ?>
+                                                    <span class="status-badge status-pending">Pending</span>
+                                                <?php else: ?>
+                                                    <span class="status-badge status-inactive">Inactive</span>
+                                                <?php endif; ?>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="dashboard-card">
+                    <h2>Recent Contact Messages</h2>
+                    <?php if (empty($contactMessages)): ?>
+                        <div style="text-align:center; color:#888; padding:2rem 0;">No messages found.</div>
+                    <?php else: ?>
+                        <?php foreach ($contactMessages as $msg): ?>
+                            <div class="contact-message">
+                                <div class="meta">
+                                    <span class="subject"><?php echo htmlspecialchars($msg['subject']); ?></span> &bull; 
+                                    <span><?php echo htmlspecialchars($msg['name']); ?> (<?php echo htmlspecialchars($msg['email']); ?>)</span>
+                                </div>
+                                <div class="body"><?php echo nl2br(htmlspecialchars($msg['message'])); ?></div>
+                                <div class="date"><?php echo date('M d, Y H:i', strtotime($msg['created_at'])); ?></div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
