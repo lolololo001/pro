@@ -370,87 +370,78 @@ $conn->close();
         /* Stats Grid */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
             margin-bottom: 2rem;
         }
 
         .stat-card {
             background: var(--light-color);
-            padding: 1.5rem;
+            padding: 1rem 1rem 0.8rem 1rem;
             border-radius: var(--radius-md);
-            box-shadow: var(--shadow-sm);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.07);
             border: 1px solid var(--border-color);
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             cursor: pointer;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: flex-start;
+            position: relative;
+            overflow: hidden;
         }
 
         .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
-        }
-
-        .stat-card.all-classes {
-            border-left: 4px solid var(--primary-color);
-        }
-
-        .stat-card.total-students {
-            border-left: 4px solid var(--accent-color);
-        }
-
-        .stat-card.subjects {
-            border-left: 4px solid var(--info-color);
-        }
-
-        .stat-card.pending-marks {
-            border-left: 4px solid var(--warning-color);
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 6px 18px rgba(0,112,74,0.12);
+            border-color: var(--primary-color);
         }
 
         .stat-header {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            margin-bottom: 1rem;
+            gap: 0.7rem;
+            margin-bottom: 0.5rem;
         }
 
         .stat-icon {
-            width: 50px;
-            height: 50px;
+            width: 38px;
+            height: 38px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             color: var(--light-color);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
         }
 
         .stat-card.all-classes .stat-icon {
-            background: var(--primary-color);
+            background: linear-gradient(135deg, #00704a 60%, #4caf50 100%);
         }
-
         .stat-card.total-students .stat-icon {
-            background: var(--accent-color);
+            background: linear-gradient(135deg, #4caf50 60%, #17a2b8 100%);
         }
-
         .stat-card.subjects .stat-icon {
-            background: var(--info-color);
+            background: linear-gradient(135deg, #17a2b8 60%, #ffc107 100%);
         }
-
         .stat-card.pending-marks .stat-icon {
-            background: var(--warning-color);
+            background: linear-gradient(135deg, #ffc107 60%, #dc3545 100%);
         }
 
         .stat-info h3 {
-            font-size: 2rem;
+            font-size: 1.3rem;
             font-weight: 700;
             color: var(--dark-color);
-            margin-bottom: 0.25rem;
+            margin-bottom: 0.1rem;
         }
 
         .stat-info p {
             color: #666;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             margin: 0;
+            font-weight: 500;
         }
 
         /* Content Grid */
@@ -646,6 +637,24 @@ $conn->close();
             background: #d1ecf1;
             color: #0c5460;
             border: 1px solid #bee5eb;
+        }
+
+        @media (max-width: 600px) {
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .stat-card {
+                min-height: 90px;
+                padding: 0.7rem 0.7rem 0.5rem 0.7rem;
+            }
+            .stat-info h3 {
+                font-size: 1.1rem;
+            }
+            .stat-icon {
+                width: 30px;
+                height: 30px;
+                font-size: 1rem;
+            }
         }
     </style>
 </head>
@@ -845,6 +854,259 @@ $conn->close();
         </div>
     </main>
 
+    <!-- Logout Modal -->
+    <div id="logoutConfirmModal" class="modal" style="display: none;">
+        <div class="modal-content logout-modal" style="
+            max-width: 450px; 
+            border-radius: 20px; 
+            padding: 0; 
+            text-align: center;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+            border: 1px solid rgba(0,112,74,0.1);
+            overflow: hidden;
+            position: relative;
+        ">
+            <!-- Modal Header with Icon -->
+            <div class="modal-header logout-header" style="
+                background: linear-gradient(135deg, #00704A 0%, #27ae60 100%);
+                padding: 2.5rem 2rem 2rem;
+                color: white;
+                position: relative;
+                overflow: hidden;
+            ">
+                <div class="logout-icon" style="
+                    width: 80px;
+                    height: 80px;
+                    background: rgba(255,255,255,0.2);
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin: 0 auto 1.5rem;
+                    font-size: 2.5rem;
+                    backdrop-filter: blur(10px);
+                    border: 2px solid rgba(255,255,255,0.3);
+                    animation: iconPulse 2s ease-in-out infinite;
+                ">
+                    <i class="fas fa-sign-out-alt"></i>
+                </div>
+                <h2 style="
+                    margin: 0; 
+                    font-size: 1.8rem; 
+                    font-weight: 700;
+                    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                ">
+                    Confirm Logout
+                </h2>
+                <p style="
+                    margin: 0.5rem 0 0 0; 
+                    opacity: 0.9; 
+                    font-size: 1rem;
+                    font-weight: 300;
+                ">
+                    Are you sure you want to leave?
+                </p>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="modal-body logout-body" style="
+                padding: 2.5rem 2rem;
+                background: white;
+            ">
+                <div class="logout-message" style="
+                    margin-bottom: 2.5rem;
+                    color: #4a5568;
+                    font-size: 1.1rem;
+                    line-height: 1.6;
+                ">
+                    <p style="margin: 0;">
+                        You're about to logout from your <strong>Teacher Portal</strong>. 
+                        Any unsaved changes will be lost.
+                    </p>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="modal-actions" style="
+                    display: flex;
+                    gap: 1rem;
+                    justify-content: center;
+                    flex-wrap: wrap;
+                ">
+                    <button type="button" class="btn btn-secondary logout-cancel-btn" onclick="closeLogoutModal()" style="
+                        padding: 1rem 2rem;
+                        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+                        color: #495057;
+                        border: 2px solid #dee2e6;
+                        border-radius: 12px;
+                        cursor: pointer;
+                        font-size: 1rem;
+                        font-weight: 600;
+                        transition: all 0.3s ease;
+                        min-width: 140px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 0.5rem;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+                    ">
+                        <i class="fas fa-times"></i>
+                        Cancel
+                    </button>
+                    <button type="button" class="btn btn-primary logout-confirm-btn" onclick="confirmLogout()" style="
+                        padding: 1rem 2rem;
+                        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+                        color: white;
+                        border: none;
+                        border-radius: 12px;
+                        cursor: pointer;
+                        font-size: 1rem;
+                        font-weight: 600;
+                        transition: all 0.3s ease;
+                        min-width: 140px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 0.5rem;
+                        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+                        position: relative;
+                        overflow: hidden;
+                    ">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Yes, Logout
+                        <div class="btn-shine" style="
+                            position: absolute;
+                            top: -50%;
+                            left: -50%;
+                            width: 200%;
+                            height: 200%;
+                            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+                            transform: rotate(45deg);
+                            animation: shine 3s infinite;
+                        "></div>
+                    </button>
+                </div>
+
+                <!-- Warning Note -->
+                <div class="logout-warning" style="
+                    margin-top: 2rem;
+                    padding: 1rem;
+                    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+                    border-radius: 8px;
+                    border-left: 4px solid #ffc107;
+                    font-size: 0.9rem;
+                    color: #856404;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                ">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Make sure to save any important information before logging out.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* Modal Animation */
+        .modal {
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: modalFadeIn 0.3s ease-out;
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Icon Animation */
+        @keyframes iconPulse {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(255,255,255,0.4);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 10px rgba(255,255,255,0);
+            }
+        }
+
+        /* Button Shine Effect */
+        @keyframes shine {
+            0% {
+                left: -50%;
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                left: 150%;
+                opacity: 0;
+            }
+        }
+
+        /* Button Hover Effects */
+        .logout-cancel-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+            background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+        }
+
+        .logout-confirm-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+            background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+        }
+
+        .logout-cancel-btn:active,
+        .logout-confirm-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 480px) {
+            .logout-modal {
+                margin: 1rem;
+                max-width: calc(100vw - 2rem);
+            }
+            
+            .modal-actions {
+                flex-direction: column;
+            }
+            
+            .logout-header {
+                padding: 2rem 1.5rem 1.5rem;
+            }
+            
+            .logout-body {
+                padding: 2rem 1.5rem;
+            }
+            
+            .logout-icon {
+                width: 60px;
+                height: 60px;
+                font-size: 2rem;
+            }
+        }
+    </style>
+
     <script>
         // Add any JavaScript functionality here
         document.addEventListener('DOMContentLoaded', function() {
@@ -858,6 +1120,55 @@ $conn->close();
                     }, 300);
                 });
             }, 5000);
+
+            // Add logout confirmation to logout button
+            const logoutBtn = document.querySelector('a[href="../logout.php"]');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    openLogoutModal();
+                });
+            }
+        });
+
+        // Logout confirmation functionality
+        function openLogoutModal() {
+            document.getElementById('logoutConfirmModal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLogoutModal() {
+            document.getElementById('logoutConfirmModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        function confirmLogout() {
+            window.location.href = '../logout.php';
+        }
+
+        // Add event listener to logout link
+        document.addEventListener('DOMContentLoaded', function() {
+            const logoutLink = document.querySelector('.logout-link');
+            if (logoutLink) {
+                logoutLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    openLogoutModal();
+                });
+            }
+
+            // Close modal when clicking outside
+            document.getElementById('logoutConfirmModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeLogoutModal();
+                }
+            });
+
+            // Close modal with Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeLogoutModal();
+                }
+            });
         });
     </script>
 </body>

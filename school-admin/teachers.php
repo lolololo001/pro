@@ -705,6 +705,9 @@ $conn->close();
                 </div>
             </div>
             <div class="card-body">
+                <div style="background-color: #e3f2fd; border: 1px solid #bbdefb; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; color: #1976d2;">
+                    <i class="fas fa-info-circle"></i> <strong>Note:</strong> When you add a new teacher, login credentials (username and password) will be automatically generated and sent to their email address. Teachers can change their password after logging in.
+                </div>
                 <?php if (count($teachers) > 0): ?>
                     <!-- Search Box -->
                     <div class="search-container" data-table="teachers-table">
@@ -1127,13 +1130,13 @@ $conn->close();
             rows.forEach(row => {
                 const cells = row.querySelectorAll('td');
                 const rowData = [
-                    cells[0].textContent.trim(),
-                    cells[1].textContent.trim(),
-                    cells[2].textContent.trim(),
-                    cells[3].textContent.trim(),
-                    cells[4].textContent.trim(),
-                    cells[5].textContent.trim(),
-                    cells[6].textContent.trim()
+                    cells[0].textContent.trim(), // Name
+                    cells[1].textContent.trim(), // Email
+                    cells[2].textContent.trim(), // Phone
+                    cells[3].textContent.trim(), // Subject
+                    cells[4].textContent.trim(), // Department
+                    cells[5].textContent.trim(), // Qualification
+                    cells[6].textContent.trim()  // Date Added
                 ];
                 csvContent += rowData.map(field => `"${field}"`).join(',') + '\n';
             });

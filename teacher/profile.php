@@ -46,30 +46,74 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             try {
                 // Check if email already exists for another teacher
-                $check_stmt = $conn->prepare("SELECT id FROM teachers WHERE email = ? AND id != ? AND school_id = ?");
-                $check_stmt->bind_param('sii', $email, $teacher_id, $school_id);
+                $check_stmt = $conn->prepare("SELECT id, password FROM teachers WHERE id = ? AND school_id = ?");
+                $check_stmt->bind_param('ii', $teacher_id, $school_id);
                 $check_stmt->execute();
-                $result = $check_stmt->get_result();
-                
-                if ($result->num_rows > 0) {
-                    $_SESSION['teacher_error'] = 'This email address is already in use by another teacher.';
-                } else {
-                    // Update profile information
-                    $update_stmt = $conn->prepare("UPDATE teachers SET name = ?, email = ?, phone = ?, subject = ?, qualification = ? WHERE id = ? AND school_id = ?");
-                    $update_stmt->bind_param('sssssii', $name, $email, $phone, $subject, $qualification, $teacher_id, $school_id);
-                    
-                    if ($update_stmt->execute()) {
-                        $_SESSION['teacher_success'] = 'Profile updated successfully!';
-                        
-                        // Update session data
-                        $_SESSION['teacher_name'] = $name;
-                        $_SESSION['teacher_email'] = $email;
-                    } else {
-                        $_SESSION['teacher_error'] = 'Failed to update profile: ' . $conn->error;
-                    }
-                    $update_stmt->close();
-                }
+                $teacher_data = $check_stmt->get_result()->fetch_assoc();
                 $check_stmt->close();
+                
+                if (!$teacher_data) {
+                    $_SESSION['teacher_error'] = 'Teacher not found.';
+                } else {
+                    // Check if email already exists for another teacher
+                    $email_check_stmt = $conn->prepare("SELECT id FROM teachers WHERE email = ? AND id != ? AND school_id = ?");
+                    $email_check_stmt->bind_param('sii', $email, $teacher_id, $school_id);
+                    $email_check_stmt->execute();
+                    $email_result = $email_check_stmt->get_result();
+                    
+                    if ($email_result->num_rows > 0) {
+                        $_SESSION['teacher_error'] = 'This email address is already in use by another teacher.';
+                    } else {
+                        // Handle password change if provided
+                        $password_updated = false;
+                        if (!empty($current_password) && !empty($new_password)) {
+                            // Verify current password
+                            if (password_verify($current_password, $teacher_data['password'])) {
+                                // Validate new password
+                                if (strlen($new_password) < 6) {
+                                    $_SESSION['teacher_error'] = 'New password must be at least 6 characters long.';
+                                } elseif ($new_password !== $confirm_password) {
+                                    $_SESSION['teacher_error'] = 'New password and confirm password do not match.';
+                                } else {
+                                    // Hash new password
+                                    $hashed_new_password = password_hash($new_password, PASSWORD_DEFAULT);
+                                    $password_updated = true;
+                                }
+                            } else {
+                                $_SESSION['teacher_error'] = 'Current password is incorrect.';
+                            }
+                        } elseif (!empty($new_password) || !empty($confirm_password)) {
+                            $_SESSION['teacher_error'] = 'Please provide current password to change password.';
+                        }
+                        
+                        if (!isset($_SESSION['teacher_error'])) {
+                            // Update profile information
+                            if ($password_updated) {
+                                $update_stmt = $conn->prepare("UPDATE teachers SET name = ?, email = ?, phone = ?, subject = ?, qualification = ?, password = ? WHERE id = ? AND school_id = ?");
+                                $update_stmt->bind_param('ssssssii', $name, $email, $phone, $subject, $qualification, $hashed_new_password, $teacher_id, $school_id);
+                            } else {
+                                $update_stmt = $conn->prepare("UPDATE teachers SET name = ?, email = ?, phone = ?, subject = ?, qualification = ? WHERE id = ? AND school_id = ?");
+                                $update_stmt->bind_param('sssssii', $name, $email, $phone, $subject, $qualification, $teacher_id, $school_id);
+                            }
+                            
+                            if ($update_stmt->execute()) {
+                                $success_message = 'Profile updated successfully!';
+                                if ($password_updated) {
+                                    $success_message .= ' Password has been changed successfully.';
+                                }
+                                $_SESSION['teacher_success'] = $success_message;
+                                
+                                // Update session data
+                                $_SESSION['teacher_name'] = $name;
+                                $_SESSION['teacher_email'] = $email;
+                            } else {
+                                $_SESSION['teacher_error'] = 'Failed to update profile: ' . $conn->error;
+                            }
+                            $update_stmt->close();
+                        }
+                    }
+                    $email_check_stmt->close();
+                }
             } catch (Exception $e) {
                 $_SESSION['teacher_error'] = 'System error: ' . $e->getMessage();
             }

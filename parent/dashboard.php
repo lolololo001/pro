@@ -4,6 +4,7 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 require_once '../config/config.php';
 require_once '../includes/email_helper_new.php';
+require_once 'parent_notifications.php';
 
 session_start();
 if (!isset($_SESSION['parent_id'])) {
@@ -13,7 +14,22 @@ if (!isset($_SESSION['parent_id'])) {
 
 // Get parent information
 $parentId = $_SESSION['parent_id'];
-$parentName = isset($_SESSION['parent_name']) ? $_SESSION['parent_name'] : 'Parent User';
+$parentName = isset($_SESSION['parent_name']) ? $_SESSION['parent_name'] : null;
+if (!$parentName && isset($_SESSION['parent_id'])) {
+    $conn = getDbConnection();
+    $stmt = $conn->prepare("SELECT CONCAT(first_name, ' ', last_name) as full_name FROM parents WHERE id = ?");
+    $stmt->bind_param('i', $_SESSION['parent_id']);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($row = $result->fetch_assoc()) {
+        $parentName = $row['full_name'];
+        $_SESSION['parent_name'] = $parentName;
+    } else {
+        $parentName = 'Parent';
+    }
+    $stmt->close();
+    $conn->close();
+}
 $parentEmail = isset($_SESSION['parent_email']) ? $_SESSION['parent_email'] : '';
 
 // Initialize variables
@@ -515,6 +531,7 @@ try {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <script src="../includes/js/feedback-ajax.js"></script>
     <style>
                     /* Advanced Modern Form Design */
                     :root {
@@ -1170,7 +1187,7 @@ try {
             
             <div class="menu-item">
                 <i class="fas fa-user-graduate"></i>
-                <a href="#students">My Children</a>
+                <a href="#students">Assign Child</a>
             </div>
             
             <div class="menu-item">
@@ -1179,13 +1196,8 @@ try {
             </div>
             
             <div class="menu-item">
-                <i class="fas fa-money-bill-wave"></i>
-                <a href="#fees">Fee Information</a>
-            </div>
-            
-            <div class="menu-item">
-                <i class="fas fa-chart-line"></i>
-                <a href="#academics">Academic Progress</a>
+                <i class="fas fa-comment-dots"></i>
+                <a href="feedback.php">Provide Feedback</a>
             </div>
             
             <div class="menu-heading">Account</div>
@@ -1213,9 +1225,55 @@ try {
                     <a href="dashboard.php">Dashboard</a>
                 </div>
             </div>
-            <button class="announcements-btn" onclick="openAnnouncementsModal()">
-                <i class="fas fa-bullhorn"></i> View Announcements
-            </button>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <!-- Notification Bell -->
+                <div class="notification-bell-container" style="position: relative;">
+                    <button id="parentNotificationBell" class="notification-bell" style="background: none; border: none; color: #6b7280; font-size: 1.5rem; cursor: pointer; position: relative; padding: 0.5rem; border-radius: 50%; transition: all 0.3s ease;">
+                        <i class="fas fa-bell"></i>
+                        <span id="parentNotificationCount" class="notification-count" style="position: absolute; top: -2px; right: -2px; background: #ef4444; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 0.75rem; display: none; align-items: center; justify-content: center; font-weight: 600;"></span>
+                    </button>
+
+                    <!-- Notification Dropdown -->
+                    <div id="parentNotificationDropdown" class="notification-dropdown" style="position: absolute; top: 100%; right: 0; background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); width: 380px; max-height: 500px; overflow: hidden; z-index: 1000; display: none; border: 1px solid #e5e7eb;">
+                        <div class="notification-header" style="padding: 1rem 1.5rem; border-bottom: 1px solid #f3f4f6; display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="margin: 0; font-size: 1.1rem; color: #111827;">Notifications</h3>
+                            <button id="parentMarkAllRead" style="background: none; border: none; color: #6b7280; font-size: 0.9rem; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 4px; transition: color 0.2s;">
+                                Mark all read
+                            </button>
+                        </div>
+                        <div id="parentNotificationList" class="notification-list" style="max-height: 400px; overflow-y: auto;">
+                            <!-- Notifications will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
+                <?php
+                // Check for new announcements
+                $has_new_announcements = false;
+                if (isset($_SESSION['parent_id'])) {
+                    include_once '../includes/announcement_helpers.php';
+                    $has_new_announcements = hasNewAnnouncements($_SESSION['parent_id']);
+                }
+                ?>
+                <button class="announcements-btn" onclick="openAnnouncementsModal()" style="position: relative;">
+                    <i class="fas fa-bullhorn"></i> View Announcements
+                    <?php if ($has_new_announcements): ?>
+                        <span class="new-indicator" style="
+                            position: absolute;
+                            top: -5px;
+                            right: -5px;
+                            background: #dc3545;
+                            color: white;
+                            font-size: 0.7rem;
+                            padding: 2px 6px;
+                            border-radius: 10px;
+                            font-weight: bold;
+                            animation: pulse-new 2s infinite;
+                            box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+                        ">NEW</span>
+                    <?php endif; ?>
+                </button>
+            </div>
         </div>
         
         <?php if ($error): ?>
@@ -1273,8 +1331,39 @@ try {
         <div class="card" id="students">
             <div class="card-header">
                 <h2><i class="fas fa-user-graduate"></i> My Children</h2>
-                <a href="#" data-toggle="modal" data-target="#addChildModal">Add Child</a>
-            </div>
+                <a href="#" data-toggle="modal" data-target="#addChildModal" class="add-child-btn">
+    <i class="fas fa-user-plus"></i> Add Child
+</a>
+<style>
+.add-child-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(90deg, #27ae60 0%, #00704A 100%);
+    color: #fff !important;
+    padding: 0.2rem 1rem;
+    border-radius: 30px;
+    font-size: 1rem;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0,112,74,0.10);
+    border: none;
+    transition: background 0.3s, box-shadow 0.3s, transform 0.2s;
+    text-decoration: none;
+    position: relative;
+    overflow: hidden;
+}
+.add-child-btn i {
+    font-size: 1rem;
+}
+.add-child-btn:hover, .add-child-btn:focus {
+    background: linear-gradient(90deg, #00704A 0%, #27ae60 100%);
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(0,112,74,0.18);
+    transform: translateY(-2px) scale(1.03);
+    text-decoration: none;
+}
+</style>
+                 </div>
             <div class="card-body">
                 <?php if ($children && count($children) > 0): ?>
                     <div class="student-cards">
@@ -1361,117 +1450,82 @@ try {
                             </div>
                             
                             <form method="POST" class="modern-permission-form" id="permissionForm">
-                                <div class="form-sections">
-                                    <!-- Section 1: Basic Information -->
-                                    <div class="form-section">
-                                        <div class="section-header">
-                                            <div class="section-number">1</div>
-                                            <h4>Basic Information</h4>
-                                        </div>
-                                        
-                                        <div class="form-row">
-                                            <div class="form-field">
-                                                <label for="request_type" class="field-label">
-                                                    <i class="fas fa-tag"></i>
-                                                    Request Type
-                                                </label>
-                                                <div class="select-wrapper">
-                                                    <select name="request_type" id="request_type" class="modern-select" required>
-                                                        <option value="" disabled selected>Choose request type</option>
-                                                        <option value="leave">🏠 Leave of Absence</option>
-                                                        <option value="medical">🏥 Medical Appointment</option>
-                                                        <option value="event">🎉 School Event</option>
-                                                        <option value="other">📝 Other</option>
-                                                    </select>
-                                                    <div class="select-arrow">
-                                                        <i class="fas fa-chevron-down"></i>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="form-field">
-                                                <label for="student_select" class="field-label">
-                                                    <i class="fas fa-user-graduate"></i>
-                                                    Select Child
-                                                </label>
-                                                <div class="select-wrapper">
-                                                    <select name="student_select" id="student_select" class="modern-select" required>
-                                                        <option value="" disabled selected>Choose your child</option>
-                                                        <?php if (!empty($children)): ?>
-                                                            <?php foreach ($children as $student): ?>
-                                                                <option value="<?php echo $student['id']; ?>">
-                                                                    <?php echo htmlspecialchars(isset($student['name']) ? $student['name'] : (isset($student['first_name']) ? $student['first_name'] . ' ' . $student['last_name'] : 'N/A')); ?>
-                                                                </option>
-                                                            <?php endforeach; ?>
-                                                        <?php else: ?>
-                                                            <option value="">No children associated</option>
-                                                        <?php endif; ?>
-                                                    </select>
-                                                    <div class="select-arrow">
-                                                        <i class="fas fa-chevron-down"></i>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Section 2: Time Details -->
-                                    <div class="form-section">
-                                        <div class="section-header">
-                                            <div class="section-number">2</div>
-                                            <h4>Time Details</h4>
-                                        </div>
-                                        
-                                        <div class="form-row">
-                                            <div class="form-field">
-                                                <label for="start_date" class="field-label">
-                                                    <i class="fas fa-calendar-plus"></i>
-                                                    Start Date & Time
-                                                </label>
-                                                <div class="input-wrapper">
-                                                    <input type="datetime-local" name="start_date" id="start_date" class="modern-input" required>
-                                                    <div class="input-icon">
-                                                        <i class="fas fa-clock"></i>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="form-field">
-                                                <label for="end_date" class="field-label">
-                                                    <i class="fas fa-calendar-minus"></i>
-                                                    End Date & Time
-                                                </label>
-                                                <div class="input-wrapper">
-                                                    <input type="datetime-local" name="end_date" id="end_date" class="modern-input" required>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Section 3: Request Details -->
-                                    <div class="form-section">
-                                        <div class="section-header">
-                                            <div class="section-number">3</div>
-                                            <h4>Request Details</h4>
-                                        </div>
-                                        
-                                        <div class="form-field full-width">
-                                            <label for="request_text" class="field-label">
-                                                <i class="fas fa-align-left"></i>
-                                                Detailed Description
+                                <div class="form-section single-card">
+                                    <div class="form-row single-row">
+                                        <div class="form-field">
+                                            <label for="request_type" class="field-label">
+                                                <i class="fas fa-tag"></i>
+                                                Request Type
                                             </label>
-                                            <div class="textarea-wrapper">
-                                                <textarea name="request_text" id="request_text" class="modern-textarea" rows="5" required placeholder="Please provide a detailed explanation of your request........"></textarea>
+                                            <div class="select-wrapper">
+                                                <select name="request_type" id="request_type" class="modern-select" required>
+                                                    <option value="" disabled selected>Choose request type</option>
+                                                    <option value="leave">🏠 Leave of Absence</option>
+                                                    <option value="medical">🏥 Medical Appointment</option>
+                                                    <option value="event">🎉 School Event</option>
+                                                    <option value="other">📝 Other</option>
+                                                </select>
+                                                <div class="select-arrow">
+                                                    <i class="fas fa-chevron-down"></i>
+                                                </div>
                                             </div>
-                                            <div class="field-hint">
-                                                <i class="fas fa-lightbulb"></i>
-                                                Be specific and include any supporting details that may help with approval
+                                        </div>
+                                        <div class="form-field">
+                                            <label for="student_select" class="field-label">
+                                                <i class="fas fa-user-graduate"></i>
+                                                Select Child
+                                            </label>
+                                            <div class="select-wrapper">
+                                                <select name="student_select" id="student_select" class="modern-select" required>
+                                                    <option value="" disabled selected>Choose your child</option>
+                                                    <?php if (!empty($children)): ?>
+                                                        <?php foreach ($children as $student): ?>
+                                                            <option value="<?php echo $student['id']; ?>">
+                                                                <?php echo htmlspecialchars(isset($student['name']) ? $student['name'] : (isset($student['first_name']) ? $student['first_name'] . ' ' . $student['last_name'] : 'N/A')); ?>
+                                                            </option>
+                                                        <?php endforeach; ?>
+                                                    <?php else: ?>
+                                                        <option value="">No children associated</option>
+                                                    <?php endif; ?>
+                                                </select>
+                                                <div class="select-arrow">
+                                                    <i class="fas fa-chevron-down"></i>
+                                                </div>
                                             </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-row single-row">
+                                        <div class="form-field">
+                                            <label for="start_date" class="field-label">
+                                                <i class="fas fa-calendar-plus"></i>
+                                                Start Date & Time
+                                            </label>
+                                            <div class="input-wrapper">
+                                                <input type="datetime-local" name="start_date" id="start_date" class="modern-input" required>
+                                                <div class="input-icon">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-field">
+                                            <label for="end_date" class="field-label">
+                                                <i class="fas fa-calendar-minus"></i>
+                                                End Date & Time
+                                            </label>
+                                            <div class="input-wrapper">
+                                                <input type="datetime-local" name="end_date" id="end_date" class="modern-input" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-field full-width">
+                                        <label for="request_text" class="field-label">
+                                            <i class="fas fa-align-left"></i>
+                                            Detailed Description
+                                        </label>
+                                        <div class="textarea-wrapper">
+                                            <textarea name="request_text" id="request_text" class="modern-textarea" rows="4" required placeholder="Please provide a detailed explanation of your request..."></textarea>
                                         </div>
                                     </div>
                                 </div>
-                                
-                                <!-- Submit Section -->
                                 <div class="submit-section">
                                     <button type="submit" name="permission_request" class="submit-button">
                                         <div class="button-content">
@@ -1482,6 +1536,62 @@ try {
                                     </button>
                                 </div>
                             </form>
+                            <style>
+                            .form-section.single-card {
+                                background: #fff;
+                                border-radius: 16px;
+                                box-shadow: 0 4px 20px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.02);
+                                border: 1px solid rgba(0,112,74,0.06);
+                                padding: 1.5rem 1.2rem 1.2rem 1.2rem;
+                                margin-bottom: 0;
+                                display: flex;
+                                flex-direction: column;
+                                gap: 1.5rem;
+                                min-height: 500px;
+                            }
+                            .recent-requests-card {
+                                min-height: 500px;
+                            }
+                            .form-row.single-row {
+                                display: flex;
+                                gap: 2rem;
+                                margin-bottom: 0;
+                            }
+                            .form-row.single-row .form-field {
+                                flex: 1;
+                                min-width: 0;
+                            }
+                            .form-section.single-card .form-field.full-width {
+                                width: 100%;
+                                margin-top: 0.5rem;
+                            }
+                            @media (max-width: 900px) {
+                                .form-section.single-card {
+                                    padding: 1.2rem 0.7rem 1rem 0.7rem;
+                                }
+                                .form-row.single-row {
+                                    flex-direction: column;
+                                    gap: 1rem;
+                                }
+                                .form-section.single-card,
+                                .recent-requests-card {
+                                    min-height: unset;
+                                }
+                            }
+                            .form-header-section h3 {
+                                font-size: 1.3rem;
+                                font-weight: 700;
+                                color: #1a3c34;
+                                margin: 0 0 0.3rem 0;
+                                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+                            }
+                            .form-header-section p {
+                                font-size: 0.9rem;
+                                color: #4a5a5a;
+                                margin: 0;
+                                opacity: 0.9;
+                            }
+                            </style>
                         </div>
                     </div>
                     
@@ -1681,6 +1791,29 @@ try {
                 @keyframes glow {
                     0% { opacity: 0.5; transform: scale(1); }
                     100% { opacity: 1; transform: scale(1.1); }
+                }
+
+                /* NEW indicator animations */
+                @keyframes pulse-new {
+                    0%, 100% {
+                        transform: scale(1);
+                        box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+                    }
+                    50% {
+                        transform: scale(1.1);
+                        box-shadow: 0 4px 8px rgba(220, 53, 69, 0.5);
+                    }
+                }
+
+                @keyframes fadeOut {
+                    0% {
+                        opacity: 1;
+                        transform: scale(1);
+                    }
+                    100% {
+                        opacity: 0;
+                        transform: scale(0.8);
+                    }
                 }
                 
                 .header-content h3 {
@@ -2334,12 +2467,14 @@ try {
                 <?php endif; ?>
                 
                 <?php if ($feedbackError): ?>
-                    <div class="alert alert-danger">
+                    <div class="alert alert-danger" style="white-space: pre-wrap;">
+                        <strong>Feedback Error:</strong><br>
                         <?php echo htmlspecialchars($feedbackError); ?>
+                        <?php if (isset($output)) { echo '<br><strong>Python Output:</strong><br>' . htmlspecialchars($output); } ?>
                     </div>
                 <?php endif; ?>                <!-- Feedback Form -->
                 <div class="feedback-section">
-                    <form method="POST" class="feedback-form" id="feedbackForm">
+                    <form class="feedback-form" id="feedbackForm">
                         <div class="feedback-header">
                             <div class="feedback-icon">
                                 <i class="fas fa-comments"></i>
@@ -2347,6 +2482,7 @@ try {
                             <h3>Share Your Valuable Feedback</h3>
                             <p>Your insights help us create a better educational experience. We value your thoughts and suggestions!</p>
                         </div>
+                        <div id="feedbackResponse"></div>
 
                         <div class="form-grid">
                             <div class="form-group">
@@ -2482,39 +2618,286 @@ try {
     </script>
 
     <!-- Logout Modal -->
-    <div id="logoutConfirmModal" class="modal">
-        <div class="modal-content" style="max-width: 400px;">
-            <div class="modal-header">
-                <h2><i class="fas fa-sign-out-alt"></i> Confirm Logout</h2>
-                <span class="close-modal" onclick="closeModal('logoutConfirmModal')">&times;</span>
+    <div id="logoutConfirmModal" class="modal" style="display: none;">
+        <div class="modal-content logout-modal" style="
+            max-width: 450px; 
+            border-radius: 20px; 
+            padding: 0; 
+            text-align: center;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+            border: 1px solid rgba(0,112,74,0.1);
+            overflow: hidden;
+            position: relative;
+        ">
+            <!-- Modal Header with Icon -->
+            <div class="modal-header logout-header" style="
+                background: linear-gradient(135deg, #00704A 0%, #27ae60 100%);
+                padding: 2.5rem 2rem 2rem;
+                color: white;
+                position: relative;
+                overflow: hidden;
+            ">
+                <div class="logout-icon" style="
+                    width: 80px;
+                    height: 80px;
+                    background: rgba(255,255,255,0.2);
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin: 0 auto 1.5rem;
+                    font-size: 2.5rem;
+                    backdrop-filter: blur(10px);
+                    border: 2px solid rgba(255,255,255,0.3);
+                    animation: iconPulse 2s ease-in-out infinite;
+                ">
+                    <i class="fas fa-sign-out-alt"></i>
+                </div>
+                <h2 style="
+                    margin: 0; 
+                    font-size: 1.8rem; 
+                    font-weight: 700;
+                    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                ">
+                    Confirm Logout
+                </h2>
+                <p style="
+                    margin: 0.5rem 0 0 0; 
+                    opacity: 0.9; 
+                    font-size: 1rem;
+                    font-weight: 300;
+                ">
+                    Are you sure you want to leave?
+                </p>
             </div>
-            <div class="modal-body">
-                <p>Are you sure you want to logout?</p>
-                <div class="form-actions" style="margin-top: 1.5rem;">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('logoutConfirmModal')">
-                        <i class="fas fa-times"></i> Cancel
+
+            <!-- Modal Body -->
+            <div class="modal-body logout-body" style="
+                padding: 2.5rem 2rem;
+                background: white;
+            ">
+                <div class="logout-message" style="
+                    margin-bottom: 2.5rem;
+                    color: #4a5568;
+                    font-size: 1.1rem;
+                    line-height: 1.6;
+                ">
+                    <p style="margin: 0;">
+                        You're about to logout from your <strong>Parent Portal</strong>. 
+                        Any unsaved changes will be lost.
+                    </p>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="modal-actions" style="
+                    display: flex;
+                    gap: 1rem;
+                    justify-content: center;
+                    flex-wrap: wrap;
+                ">
+                    <button type="button" class="btn btn-secondary logout-cancel-btn" onclick="closeLogoutModal()" style="
+                        padding: 1rem 2rem;
+                        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+                        color: #495057;
+                        border: 2px solid #dee2e6;
+                        border-radius: 12px;
+                        cursor: pointer;
+                        font-size: 1rem;
+                        font-weight: 600;
+                        transition: all 0.3s ease;
+                        min-width: 140px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 0.5rem;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+                    ">
+                        <i class="fas fa-times"></i>
+                        Cancel
                     </button>
-                    <button type="button" class="btn btn-primary" onclick="window.location.href='../logout.php'">
-                        <i class="fas fa-check"></i> Yes, Logout
+                    <button type="button" class="btn btn-primary logout-confirm-btn" onclick="confirmLogout()" style="
+                        padding: 1rem 2rem;
+                        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+                        color: white;
+                        border: none;
+                        border-radius: 12px;
+                        cursor: pointer;
+                        font-size: 1rem;
+                        font-weight: 600;
+                        transition: all 0.3s ease;
+                        min-width: 140px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 0.5rem;
+                        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+                        position: relative;
+                        overflow: hidden;
+                    ">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Yes, Logout
+                        <div class="btn-shine" style="
+                            position: absolute;
+                            top: -50%;
+                            left: -50%;
+                            width: 200%;
+                            height: 200%;
+                            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+                            transform: rotate(45deg);
+                            animation: shine 3s infinite;
+                        "></div>
                     </button>
+                </div>
+
+                <!-- Warning Note -->
+                <div class="logout-warning" style="
+                    margin-top: 2rem;
+                    padding: 1rem;
+                    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+                    border-radius: 8px;
+                    border-left: 4px solid #ffc107;
+                    font-size: 0.9rem;
+                    color: #856404;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                ">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Make sure to save any important information before logging out.</span>
                 </div>
             </div>
         </div>
     </div>
 
+    <style>
+        /* Modal Animation */
+        .modal {
+            animation: modalFadeIn 0.3s ease-out;
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Icon Animation */
+        @keyframes iconPulse {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(255,255,255,0.4);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 10px rgba(255,255,255,0);
+            }
+        }
+
+        /* Button Shine Effect */
+        @keyframes shine {
+            0% {
+                left: -50%;
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                left: 150%;
+                opacity: 0;
+            }
+        }
+
+        /* Button Hover Effects */
+        .logout-cancel-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+            background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+        }
+
+        .logout-confirm-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+            background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+        }
+
+        .logout-cancel-btn:active,
+        .logout-confirm-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 480px) {
+            .logout-modal {
+                margin: 1rem;
+                max-width: calc(100vw - 2rem);
+            }
+            
+            .modal-actions {
+                flex-direction: column;
+            }
+            
+            .logout-header {
+                padding: 2rem 1.5rem 1.5rem;
+            }
+            
+            .logout-body {
+                padding: 2rem 1.5rem;
+            }
+            
+            .logout-icon {
+                width: 60px;
+                height: 60px;
+                font-size: 2rem;
+            }
+        }
+    </style>
+
     <script>
-        document.addEventListener('DOMContentLoaded', function() {            const logoutLinks = document.querySelectorAll('.logout-link, a[href="../logout.php"]');
-            logoutLinks.forEach(link => {
-                link.addEventListener('click', function(e) {
+        // Logout confirmation functionality
+        function openLogoutModal() {
+            document.getElementById('logoutConfirmModal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLogoutModal() {
+            document.getElementById('logoutConfirmModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        function confirmLogout() {
+            window.location.href = '../logout.php';
+        }
+
+        // Add event listener to logout link
+        document.addEventListener('DOMContentLoaded', function() {
+            const logoutLink = document.querySelector('.logout-link');
+            if (logoutLink) {
+                logoutLink.addEventListener('click', function(e) {
                     e.preventDefault();
-                    document.getElementById('logoutConfirmModal').style.display = 'block';
+                    openLogoutModal();
                 });
+            }
+
+            // Close modal when clicking outside
+            document.getElementById('logoutConfirmModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeLogoutModal();
+                }
             });
 
-            // Function to close modals
-            window.closeModal = function(modalId) {
-                document.getElementById(modalId).style.display = 'none';
-            };
+            // Close modal with Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeLogoutModal();
+                }
+            });
         });
     </script>
     <script src="../includes/js/feedback-ajax.js"></script>
@@ -2835,6 +3218,30 @@ try {
         function openAnnouncementsModal() {
             document.getElementById('announcementsModalBg').style.display = 'flex';
             fetchAnnouncements();
+
+            // Mark announcements as viewed and remove NEW indicator
+            fetch('mark_announcements_viewed.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Remove NEW indicator
+                    const newIndicator = document.querySelector('.new-indicator');
+                    if (newIndicator) {
+                        newIndicator.style.animation = 'fadeOut 0.3s ease-out';
+                        setTimeout(() => {
+                            newIndicator.remove();
+                        }, 300);
+                    }
+                }
+            })
+            .catch(error => {
+                console.log('Note: Could not mark announcements as viewed');
+            });
         }
         function closeAnnouncementsModal() {
             document.getElementById('announcementsModalBg').style.display = 'none';
@@ -2842,29 +3249,344 @@ try {
         function fetchAnnouncements() {
             const list = document.getElementById('announcementsList');
             list.innerHTML = '<div style="text-align:center; color:#888; padding:2rem 0;"><i class="fas fa-spinner fa-spin"></i> Loading announcements...</div>';
+
             fetch('fetch_announcements.php')
-                .then(res => res.json())
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return res.json();
+                })
                 .then(data => {
-                    if (data.success && data.announcements.length > 0) {
-                        list.innerHTML = data.announcements.map(a => `
-                            <div class="announcement-item">
-                                <div class="announcement-title">${a.title}</div>
-                                <div class="announcement-meta">
-                                    <span>${a.date}</span> &bull; 
-                                    <span class="announcement-priority ${a.priority}">${a.priority.charAt(0).toUpperCase() + a.priority.slice(1)}</span>
+                    if (data.success && data.announcements && data.announcements.length > 0) {
+                        const priorityColors = {
+                            'urgent': '#dc3545',
+                            'high': '#fd7e14',
+                            'medium': '#ffc107',
+                            'low': '#28a745'
+                        };
+
+                        const priorityIcons = {
+                            'urgent': 'fas fa-exclamation-triangle',
+                            'high': 'fas fa-exclamation-circle',
+                            'medium': 'fas fa-info-circle',
+                            'low': 'fas fa-check-circle'
+                        };
+
+                        list.innerHTML = data.announcements.map(a => {
+                            const priorityColor = priorityColors[a.priority] || '#6c757d';
+                            const priorityIcon = priorityIcons[a.priority] || 'fas fa-info-circle';
+                            const isUrgent = a.priority === 'urgent';
+                            const isRecent = a.is_recent;
+
+                            return `
+                                <div class="announcement-item" style="
+                                    border-left: 4px solid ${priorityColor};
+                                    background: ${isUrgent ? '#fff5f5' : '#ffffff'};
+                                    padding: 1.25rem;
+                                    margin-bottom: 1rem;
+                                    border-radius: 0 8px 8px 0;
+                                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                                    ${isUrgent ? 'animation: pulse 2s infinite;' : ''}
+                                ">
+                                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+                                        <h4 style="margin: 0; color: #333; font-size: 1.1rem; font-weight: 600;">
+                                            ${isRecent ? '<span style="background: #28a745; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; margin-right: 0.5rem;">NEW</span>' : ''}
+                                            ${a.title}
+                                        </h4>
+                                        <span style="
+                                            background: ${priorityColor};
+                                            color: white;
+                                            padding: 4px 10px;
+                                            border-radius: 12px;
+                                            font-size: 0.8rem;
+                                            font-weight: 500;
+                                            display: flex;
+                                            align-items: center;
+                                            gap: 0.25rem;
+                                        ">
+                                            <i class="${priorityIcon}"></i>
+                                            ${a.priority.charAt(0).toUpperCase() + a.priority.slice(1)}
+                                        </span>
+                                    </div>
+
+                                    <div style="color: #666; line-height: 1.6; margin-bottom: 0.75rem;">
+                                        ${a.content.replace(/\n/g, '<br>')}
+                                    </div>
+
+                                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: #888;">
+                                        <div>
+                                            <i class="fas fa-calendar-alt"></i> Published: ${a.date}
+                                            ${a.expires ? `<span style="margin-left: 1rem;"><i class="fas fa-clock"></i> Expires: ${a.expires}</span>` : ''}
+                                        </div>
+                                        ${a.attachment ? `
+                                            <a href="../uploads/announcements/${a.attachment}" target="_blank" style="
+                                                background: #007bff;
+                                                color: white;
+                                                padding: 0.4rem 0.8rem;
+                                                border-radius: 4px;
+                                                text-decoration: none;
+                                                font-size: 0.8rem;
+                                                display: flex;
+                                                align-items: center;
+                                                gap: 0.25rem;
+                                            ">
+                                                <i class="fas fa-paperclip"></i> Attachment
+                                            </a>
+                                        ` : ''}
+                                    </div>
                                 </div>
-                                <div class="announcement-content">${a.content}</div>
-                                ${a.attachment ? `<div style=\"margin-top:0.5rem;\"><a href=\"../uploads/announcements/${a.attachment}\" target=\"_blank\" class=\"btn btn-sm\" style=\"background:#2563eb;color:#fff;padding:0.4rem 1rem;border-radius:6px;text-decoration:none;display:inline-block;margin-top:0.3rem;\"><i class=\"fas fa-paperclip\"></i> View Attachment</a></div>` : ''}
-                            </div>
-                        `).join('');
+                            `;
+                        }).join('');
+
+                        // Add pulse animation for urgent announcements
+                        if (!document.getElementById('urgentPulseStyle')) {
+                            const style = document.createElement('style');
+                            style.id = 'urgentPulseStyle';
+                            style.textContent = `
+                                @keyframes pulse {
+                                    0% { box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                                    50% { box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3); }
+                                    100% { box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                                }
+                            `;
+                            document.head.appendChild(style);
+                        }
+
                     } else {
-                        list.innerHTML = '<div style="text-align:center; color:#888; padding:2rem 0;">No announcements found.</div>';
+                        list.innerHTML = `
+                            <div style="text-align:center; color:#888; padding:3rem 0;">
+                                <i class="fas fa-bullhorn" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                                <h3 style="margin: 0 0 0.5rem 0; color: #666;">No Announcements</h3>
+                                <p style="margin: 0; font-size: 0.9rem;">There are no announcements available at this time.</p>
+                            </div>
+                        `;
                     }
                 })
-                .catch(() => {
-                    list.innerHTML = '<div style="text-align:center; color:#e53e3e; padding:2rem 0;">Failed to load announcements.</div>';
+                .catch(error => {
+                    console.error('Error fetching announcements:', error);
+                    list.innerHTML = `
+                        <div style="text-align:center; color:#dc3545; padding:3rem 0;">
+                            <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                            <h3 style="margin: 0 0 0.5rem 0;">Error Loading Announcements</h3>
+                            <p style="margin: 0; font-size: 0.9rem;">Please try again later or contact support if the problem persists.</p>
+                            <button onclick="fetchAnnouncements()" style="
+                                margin-top: 1rem;
+                                padding: 0.5rem 1rem;
+                                background: #007bff;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                            ">
+                                <i class="fas fa-redo"></i> Retry
+                            </button>
+                        </div>
+                    `;
                 });
         }
+
+        // Parent Notification System
+        class ParentNotificationSystem {
+            constructor() {
+                this.bell = document.getElementById('parentNotificationBell');
+                this.dropdown = document.getElementById('parentNotificationDropdown');
+                this.countBadge = document.getElementById('parentNotificationCount');
+                this.notificationList = document.getElementById('parentNotificationList');
+                this.markAllReadBtn = document.getElementById('parentMarkAllRead');
+
+                this.init();
+            }
+
+            init() {
+                if (!this.bell) return; // Exit if elements don't exist
+
+                // Load initial notification count
+                this.updateNotificationCount();
+
+                // Set up event listeners
+                this.bell.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.toggleDropdown();
+                });
+
+                this.markAllReadBtn?.addEventListener('click', () => {
+                    this.markAllAsRead();
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (this.dropdown && !this.dropdown.contains(e.target) && !this.bell.contains(e.target)) {
+                        this.closeDropdown();
+                    }
+                });
+
+                // Auto-refresh every 30 seconds
+                setInterval(() => {
+                    this.updateNotificationCount();
+                }, 30000);
+            }
+
+            async updateNotificationCount() {
+                try {
+                    const response = await fetch('notifications_api.php?action=get_count');
+                    const data = await response.json();
+
+                    if (data.count > 0) {
+                        this.countBadge.textContent = data.count > 99 ? '99+' : data.count;
+                        this.countBadge.style.display = 'flex';
+                        this.bell.style.color = '#ef4444';
+                    } else {
+                        this.countBadge.style.display = 'none';
+                        this.bell.style.color = '#6b7280';
+                    }
+                } catch (error) {
+                    console.error('Error updating notification count:', error);
+                }
+            }
+
+            async toggleDropdown() {
+                if (this.dropdown.style.display === 'block') {
+                    this.closeDropdown();
+                } else {
+                    await this.loadNotifications();
+                    this.dropdown.style.display = 'block';
+                }
+            }
+
+            closeDropdown() {
+                this.dropdown.style.display = 'none';
+            }
+
+            async loadNotifications() {
+                this.notificationList.innerHTML = '<div class="notification-loading" style="padding: 2rem; text-align: center; color: #6b7280;"><i class="fas fa-spinner fa-spin"></i> Loading notifications...</div>';
+
+                try {
+                    const response = await fetch('notifications_api.php?action=get_notifications&limit=20');
+                    const data = await response.json();
+
+                    if (data.notifications && data.notifications.length > 0) {
+                        this.renderNotifications(data.notifications);
+                    } else {
+                        this.notificationList.innerHTML = '<div style="padding: 2rem; text-align: center; color: #6c757d;"><i class="fas fa-bell-slash"></i><br>No notifications</div>';
+                    }
+                } catch (error) {
+                    console.error('Error loading notifications:', error);
+                    this.notificationList.innerHTML = '<div style="padding: 2rem; text-align: center; color: #dc3545;"><i class="fas fa-exclamation-triangle"></i><br>Error loading notifications</div>';
+                }
+            }
+
+            renderNotifications(notifications) {
+                const html = notifications.map(notification => `
+                    <div class="notification-item ${!notification.is_read ? 'unread' : ''}"
+                         data-id="${notification.id}"
+                         data-reference-table="${notification.reference_table}"
+                         data-reference-id="${notification.reference_id}"
+                         style="padding: 1rem 1.5rem; border-bottom: 1px solid #f3f4f6; cursor: pointer; transition: background-color 0.2s; ${!notification.is_read ? 'background-color: #fef3f2;' : ''}"
+                         onmouseover="this.style.backgroundColor='#f9fafb'"
+                         onmouseout="this.style.backgroundColor='${!notification.is_read ? '#fef3f2' : 'white'}'">
+                        <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                            <div style="color: ${notification.color}; font-size: 1.1rem; margin-top: 0.2rem;">
+                                <i class="${notification.icon}"></i>
+                            </div>
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="font-weight: ${!notification.is_read ? '600' : '500'}; color: #111827; margin-bottom: 0.25rem; font-size: 0.9rem;">
+                                    ${notification.title}
+                                </div>
+                                <div style="color: #6b7280; font-size: 0.85rem; line-height: 1.4; margin-bottom: 0.5rem;">
+                                    ${notification.message}
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="color: #9ca3af; font-size: 0.75rem;">${notification.time_ago}</span>
+                                    <button class="delete-notification" data-id="${notification.id}" style="background: none; border: none; color: #dc3545; cursor: pointer; padding: 0.25rem; border-radius: 3px; opacity: 0.7;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">
+                                        <i class="fas fa-trash-alt" style="font-size: 0.8rem;"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+                this.notificationList.innerHTML = html;
+
+                // Add click handlers
+                this.notificationList.querySelectorAll('.notification-item').forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        if (!e.target.closest('.delete-notification')) {
+                            this.handleNotificationClick(item);
+                        }
+                    });
+                });
+
+                this.notificationList.querySelectorAll('.delete-notification').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.deleteNotification(btn.dataset.id);
+                    });
+                });
+            }
+
+            async handleNotificationClick(item) {
+                const notificationId = item.dataset.id;
+                const referenceTable = item.dataset.referenceTable;
+                const referenceId = item.dataset.referenceId;
+
+                // Mark as read and get redirect URL
+                try {
+                    const response = await fetch(`notifications_api.php?action=get_redirect_url&notification_id=${notificationId}&reference_table=${referenceTable}&reference_id=${referenceId}`);
+                    const data = await response.json();
+
+                    if (data.redirect_url) {
+                        window.location.href = data.redirect_url;
+                    }
+                } catch (error) {
+                    console.error('Error handling notification click:', error);
+                }
+            }
+
+            async markAllAsRead() {
+                try {
+                    const response = await fetch('notifications_api.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: 'action=mark_all_read'
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        this.updateNotificationCount();
+                        this.loadNotifications();
+                    }
+                } catch (error) {
+                    console.error('Error marking all as read:', error);
+                }
+            }
+
+            async deleteNotification(notificationId) {
+                try {
+                    const response = await fetch('notifications_api.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `action=delete&notification_id=${notificationId}`
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        this.updateNotificationCount();
+                        this.loadNotifications();
+                    }
+                } catch (error) {
+                    console.error('Error deleting notification:', error);
+                }
+            }
+        }
+
+        // Initialize parent notification system
+        new ParentNotificationSystem();
     </script>
 </body>
-</html></html>
+</html>

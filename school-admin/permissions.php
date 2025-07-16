@@ -188,7 +188,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_id'])) {
         
         try {
             // Update permission request status
-            $stmt = $conn->prepare("                UPDATE permission_requests 
+            $stmt = $conn->prepare("UPDATE permission_requests 
                 SET status = ?, 
                     response_comment = ?,
                     responded_by = ?,
@@ -200,12 +200,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_id'])) {
                 throw new Exception('Database error: ' . $conn->error);
             }
             
-            $stmt->bind_param('ssii', $action, $comment, $_SESSION['school_admin_id'], $requestId);
-            $stmt->execute();
-            
-            if ($stmt->affected_rows === 0) {
-                throw new Exception('Request not found or already processed');
-            }
+                    $stmt->bind_param('ssii', $action, $comment, $_SESSION['school_admin_id'], $requestId);
+        $result = $stmt->execute();
+        
+        if (!$result) {
+            throw new Exception('Database error: ' . $stmt->error);
+        }
+        
+        if ($stmt->affected_rows === 0) {
+            throw new Exception('Request not found or already processed');
+        }
               // Get request details for notification
             $stmt = $conn->prepare("
                 SELECT pr.*, 
@@ -700,7 +704,7 @@ try {
 
         .btn-primary {
             background-color: var(--primary-color);
-            color: var,--light-color;
+            color: var(--light-color);
         }
 
         .btn-primary:hover {
@@ -711,7 +715,7 @@ try {
 
         .btn-danger {
             background-color: var(--danger-color);
-            color: var,--light-color;
+            color: var(--light-color);
         }
 
         .btn-danger:hover {
@@ -800,7 +804,7 @@ try {
             height: 48px;
             border-radius: var(--radius-sm);
             background: var(--primary-color);
-            color: var,--light-color;
+            color: var(--light-color);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -870,7 +874,7 @@ try {
         .filter-summary {
             padding: 0.5rem 1rem;
             background: var(--primary-color);
-            color: var,--light-color;
+            color: var(--light-color);
             border-radius: 50px;
             font-size: 0.9rem;
             font-weight: 500;
@@ -912,7 +916,7 @@ try {
             padding: 1.5rem;
             border-bottom: 1px solid var(--border-color);
             background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
-            color: var,--light-color;
+            color: var(--light-color);
             position: relative;
             overflow: hidden;
         }
@@ -1042,12 +1046,12 @@ try {
 
         .btn-approve {
             background: var(--success-color);
-            color: var,--light-color;
+            color: var(--light-color);
         }
 
         .btn-reject {
             background: var(--danger-color);
-            color: var,--light-color;
+            color: var(--light-color);
         }
 
         .btn-approve:hover, .btn-reject:hover {
@@ -1346,113 +1350,210 @@ try {
                     <p>No permission requests found.</p>
                 </div>
             <?php else: ?>
+                <style>
+                .pro-permission-card {
+                  background: #fff;
+                  border-radius: 18px;
+                  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+                  margin-bottom: 2rem;
+                  overflow: hidden;
+                  border-left: 6px solid #ffc107;
+                  transition: box-shadow 0.2s, transform 0.2s;
+                  position: relative;
+                }
+                .pro-permission-card.status-approved { border-left-color: #4caf50; }
+                .pro-permission-card.status-rejected { border-left-color: #f44336; }
+                .pro-permission-card.status-pending { border-left-color: #ffc107; }
+                .pro-permission-card:hover { box-shadow: 0 8px 32px rgba(0,0,0,0.13); transform: translateY(-2px); }
+                .pro-card-header {
+                  background: linear-gradient(90deg, #00704a 60%, #4caf50 100%);
+                  color: #fff;
+                  padding: 1.2rem 1.5rem;
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  font-size: 1.1rem;
+                  font-weight: 600;
+                }
+                .pro-card-type i { margin-right: 0.5rem; }
+                .pro-status-badge {
+                  padding: 0.4rem 1.1rem;
+                  border-radius: 20px;
+                  font-size: 0.95rem;
+                  font-weight: 500;
+                  display: flex;
+                  align-items: center;
+                  gap: 0.5rem;
+                }
+                .pro-status-badge.pending { background: #fff3cd; color: #856404; }
+                .pro-status-badge.approved { background: #d4edda; color: #155724; }
+                .pro-status-badge.rejected { background: #f8d7da; color: #721c24; }
+                .pro-card-body { padding: 1.5rem; }
+                .pro-info-grid {
+                  display: grid;
+                  grid-template-columns: 1fr 1fr;
+                  gap: 1.5rem;
+                  margin-bottom: 1.2rem;
+                }
+                .pro-info-title {
+                  font-size: 0.98rem;
+                  color: #00704a;
+                  font-weight: 600;
+                  margin-bottom: 0.2rem;
+                }
+                .pro-info-value { font-size: 1.05rem; color: #333; }
+                .pro-id { color: #888; font-size: 0.95em; }
+                .pro-date-range {
+                  display: flex;
+                  gap: 2rem;
+                  margin-bottom: 1.2rem;
+                  font-size: 1rem;
+                  color: #555;
+                }
+                .pro-date-range i { color: #00704a; margin-right: 0.3rem; }
+                .pro-reason {
+                  background: #f8f9fa;
+                  border-left: 4px solid #00704a;
+                  padding: 1rem;
+                  border-radius: 8px;
+                  margin-bottom: 1.2rem;
+                  font-size: 1.05rem;
+                  color: #333;
+                  display: flex;
+                  align-items: center;
+                  gap: 0.7rem;
+                }
+                .pro-reason i { color: #00704a; }
+                .pro-response {
+                  background: #e3f2fd;
+                  border-left: 4px solid #2196f3;
+                  padding: 1rem;
+                  border-radius: 8px;
+                  margin-bottom: 1.2rem;
+                  font-size: 1.05rem;
+                  color: #1976d2;
+                  display: flex;
+                  align-items: center;
+                  gap: 0.7rem;
+                }
+                .pro-response i { color: #2196f3; }
+                .pro-action-bar {
+                  display: flex;
+                  gap: 1rem;
+                  margin-top: 1.2rem;
+                }
+                .pro-btn {
+                  flex: 1;
+                  padding: 0.9rem 0;
+                  border: none;
+                  border-radius: 8px;
+                  font-size: 1.05rem;
+                  font-weight: 600;
+                  cursor: pointer;
+                  transition: background 0.2s, color 0.2s;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  gap: 0.6rem;
+                }
+                .pro-btn.approve { background: #4caf50; color: #fff; }
+                .pro-btn.reject { background: #f44336; color: #fff; }
+                .pro-btn.approve:hover { background: #388e3c; }
+                .pro-btn.reject:hover { background: #c62828; }
+                </style>
                 <?php foreach ($requests as $request): ?>
-                    <div class="permission-card" data-status="<?php echo htmlspecialchars($request['status']); ?>" data-type="<?php echo htmlspecialchars($request['request_type']); ?>" id="request-<?php echo $request['id']; ?>">
-                        <div class="permission-header">
-                            <div class="permission-title">
-                                <?php echo ucfirst(htmlspecialchars($request['request_type'])); ?> Request
-                                <span class="status-badge status-<?php echo htmlspecialchars($request['status']); ?>">
-                                    <?php echo ucfirst(htmlspecialchars($request['status'])); ?>
-                                </span>
-                            </div>
-                            <div class="permission-date">
-                                Submitted: <?php echo date('M d, Y h:i A', strtotime($request['created_at'])); ?>
-                            </div>
+                    <div class="pro-permission-card status-<?php echo htmlspecialchars($request['status']); ?>">
+                      <div class="pro-card-header">
+                        <div class="pro-card-type">
+                          <i class="fas fa-clipboard-list"></i>
+                          <?php echo ucfirst(htmlspecialchars($request['request_type'])); ?> Request
                         </div>
-                        
-                        <div class="permission-details">
-                            <div class="student-info">
-                                <p><i class="fas fa-user-graduate"></i> <strong>Student:</strong> 
-                                    <?php echo htmlspecialchars($request['student_first_name'] . ' ' . $request['student_last_name']); ?>
-                                    <small>(<?php echo htmlspecialchars($request['admission_number']); ?>)</small>
-                                </p>
-                            </div>
-                            
-                            <div class="parent-info">
-                                <p><i class="fas fa-user"></i> <strong>Parent:</strong> 
-                                    <?php echo htmlspecialchars($request['parent_first_name'] . ' ' . $request['parent_last_name']); ?>
-                                </p>
-                                <p><i class="fas fa-envelope"></i> <?php echo htmlspecialchars($request['parent_email']); ?></p>
-                                <p><i class="fas fa-phone"></i> <?php echo htmlspecialchars($request['parent_phone']); ?></p>
-                            </div>
-                            
-                            <div class="date-range">
-                                <span><i class="fas fa-calendar-alt"></i> <strong>From:</strong> <?php echo date('M d, Y h:i A', strtotime($request['start_date'])); ?></span>
-                                <span><i class="fas fa-calendar-alt"></i> <strong>To:</strong> <?php echo date('M d, Y h:i A', strtotime($request['end_date'])); ?></span>
-                            </div>
-                            
-                            <div class="permission-reason">
-                                <p><strong>Reason:</strong></p>
-                                <p><?php echo nl2br(htmlspecialchars($request['reason'])); ?></p>
-                            </div>
-                            
-                            <?php if (!empty($request['response_comment']) && ($request['status'] === 'approved' || $request['status'] === 'rejected')): ?>
-                                <div class="response-comment">
-                                    <p><strong>Response from <?php echo htmlspecialchars($request['admin_name']); ?>:</strong></p>
-                                    <p><?php echo nl2br(htmlspecialchars($request['response_comment'])); ?></p>
-                                </div>
-                            <?php endif; ?>
-                        </div>                            <?php if ($request['status'] === 'pending'): ?>
-                            <div class="permission-actions">
-                                <button type="button" class="btn-approve" onclick="showResponseForm(this, 'approve', <?php echo $request['id']; ?>)">
-                                    <i class="fas fa-check"></i> Approve
-                                </button>
-                                <button type="button" class="btn-reject" onclick="showResponseForm(this, 'reject', <?php echo $request['id']; ?>)">
-                                    <i class="fas fa-times"></i> Reject
-                                </button>
-                            </div>
-
-                            <!-- Enhanced Response Form -->
-                            <div class="response-form" id="response-form-<?php echo $request['id']; ?>" style="display: none;">
-                                <div class="response-form-inner">
-                                    <div class="response-header">
-                                        <h3 id="response-title-<?php echo $request['id']; ?>"></h3>
-                                        <button type="button" class="close-btn" onclick="hideResponseForm(<?php echo $request['id']; ?>)" title="Close form">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                    </div>
-                                    
-                                    <form method="POST" onsubmit="return handleSubmit(event, <?php echo $request['id']; ?>)">
-                                        <input type="hidden" name="request_id" value="<?php echo $request['id']; ?>">
-                                        <input type="hidden" name="action" id="action-<?php echo $request['id']; ?>" value="">
-                                        <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
-                                        
-                                        <div class="response-summary">
-                                            <div class="request-meta">
-                                                <p><strong>Student:</strong> <?php echo htmlspecialchars($request['student_first_name'] . ' ' . $request['student_last_name']); ?></p>
-                                                <p><strong>Parent:</strong> <?php echo htmlspecialchars($request['parent_first_name'] . ' ' . $request['parent_last_name']); ?></p>
-                                                <p><strong>Type:</strong> <?php echo ucfirst(htmlspecialchars($request['request_type'])); ?></p>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="form-group">
-                                            <label for="response-<?php echo $request['id']; ?>" class="response-label">
-                                                <span id="required-indicator-<?php echo $request['id']; ?>" class="required-indicator" style="display: none;">*</span>
-                                                Response Message
-                                            </label>
-                                            <textarea 
-                                                id="response-<?php echo $request['id']; ?>"
-                                                name="response_comment" 
-                                                class="response-textarea"
-                                                rows="4"
-                                                placeholder=""
-                                                aria-required="false"
-                                            ></textarea>
-                                            <small id="comment-help-<?php echo $request['id']; ?>" class="comment-help"></small>
-                                        </div>
-                                        
-                                        <div class="form-actions">
-                                            <button type="button" class="btn-cancel" onclick="hideResponseForm(<?php echo $request['id']; ?>)">
-                                                <i class="fas fa-arrow-left"></i> Cancel
-                                            </button>
-                                            <button type="submit" id="submit-btn-<?php echo $request['id']; ?>" class="btn-submit">
-                                                <i class="fas fa-paper-plane"></i> Send Response
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
+                        <span class="pro-status-badge <?php echo htmlspecialchars($request['status']); ?>">
+                          <?php if ($request['status'] === 'pending'): ?><i class="fas fa-clock"></i> Pending<?php endif; ?>
+                          <?php if ($request['status'] === 'approved'): ?><i class="fas fa-check-circle"></i> Approved<?php endif; ?>
+                          <?php if ($request['status'] === 'rejected'): ?><i class="fas fa-times-circle"></i> Rejected<?php endif; ?>
+                        </span>
+                      </div>
+                      <div class="pro-card-body">
+                        <div class="pro-info-grid">
+                          <div>
+                            <div class="pro-info-title"><i class="fas fa-user-graduate"></i> Student</div>
+                            <div class="pro-info-value"><?php echo htmlspecialchars($request['student_first_name'] . ' ' . $request['student_last_name']); ?> <span class="pro-id">(ID: <?php echo htmlspecialchars($request['reg_number']); ?>)</span></div>
+                          </div>
+                          <div>
+                            <div class="pro-info-title"><i class="fas fa-user"></i> Parent</div>
+                            <div class="pro-info-value"><?php echo htmlspecialchars($request['parent_first_name'] . ' ' . $request['parent_last_name']); ?></div>
+                            <div class="pro-info-value"><i class="fas fa-envelope"></i> <?php echo htmlspecialchars($request['parent_email']); ?></div>
+                            <div class="pro-info-value"><i class="fas fa-phone"></i> <?php echo htmlspecialchars($request['parent_phone']); ?></div>
+                          </div>
+                        </div>
+                        <div class="pro-date-range">
+                          <span><i class="fas fa-calendar-alt"></i> From: <?php echo date('M d, Y h:i A', strtotime($request['start_date'])); ?></span>
+                          <span><i class="fas fa-calendar-alt"></i> To: <?php echo date('M d, Y h:i A', strtotime($request['end_date'])); ?></span>
+                        </div>
+                        <div class="pro-reason">
+                          <i class="fas fa-info-circle"></i>
+                          <span>Reason: <?php echo nl2br(htmlspecialchars($request['reason'])); ?></span>
+                        </div>
+                        <?php if (!empty($request['response_comment']) && ($request['status'] === 'approved' || $request['status'] === 'rejected')): ?>
+                          <div class="pro-response">
+                            <i class="fas fa-quote-left"></i>
+                            <span><?php echo nl2br(htmlspecialchars($request['response_comment'])); ?></span>
+                          </div>
                         <?php endif; ?>
+                        <?php if ($request['status'] === 'pending'): ?>
+                          <div class="pro-action-bar">
+                            <button type="button" class="pro-btn approve" onclick="showResponseForm(this, 'approve', <?php echo $request['id']; ?>)"><i class="fas fa-check"></i> Approve</button>
+                            <button type="button" class="pro-btn reject" onclick="showResponseForm(this, 'reject', <?php echo $request['id']; ?>)"><i class="fas fa-times"></i> Reject</button>
+                          </div>
+                          <!-- Enhanced Response Form -->
+                          <div class="response-form" id="response-form-<?php echo $request['id']; ?>" style="display: none;">
+                            <div class="response-form-inner">
+                              <div class="response-header">
+                                <h3 id="response-title-<?php echo $request['id']; ?>"></h3>
+                                <button type="button" class="close-btn" onclick="hideResponseForm(<?php echo $request['id']; ?>)" title="Close form">
+                                  <i class="fas fa-times"></i>
+                                </button>
+                              </div>
+                              <form method="POST" onsubmit="return handleSubmit(event, <?php echo $request['id']; ?>)">
+                                <input type="hidden" name="request_id" value="<?php echo $request['id']; ?>">
+                                <input type="hidden" name="action" id="action-<?php echo $request['id']; ?>" value="">
+                                <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+                                <div class="response-summary">
+                                  <div class="request-meta">
+                                    <p><strong>Student:</strong> <?php echo htmlspecialchars($request['student_first_name'] . ' ' . $request['student_last_name']); ?></p>
+                                    <p><strong>Parent:</strong> <?php echo htmlspecialchars($request['parent_first_name'] . ' ' . $request['parent_last_name']); ?></p>
+                                    <p><strong>Type:</strong> <?php echo ucfirst(htmlspecialchars($request['request_type'])); ?></p>
+                                  </div>
+                                </div>
+                                <div class="form-group">
+                                  <label for="response-<?php echo $request['id']; ?>" class="response-label">
+                                    <span id="required-indicator-<?php echo $request['id']; ?>" class="required-indicator" style="display: none;">*</span>
+                                    Response Message
+                                  </label>
+                                  <textarea 
+                                    id="response-<?php echo $request['id']; ?>"
+                                    name="response_comment" 
+                                    class="response-textarea"
+                                    rows="4"
+                                    placeholder=""
+                                    aria-required="false"
+                                  ></textarea>
+                                  <small id="comment-help-<?php echo $request['id']; ?>" class="comment-help"></small>
+                                </div>
+                                <div class="form-actions">
+                                  <button type="button" class="btn-cancel" onclick="hideResponseForm(<?php echo $request['id']; ?>)">
+                                    <i class="fas fa-arrow-left"></i> Cancel
+                                  </button>
+                                  <button type="submit" id="submit-btn-<?php echo $request['id']; ?>" class="btn-submit">
+                                    <i class="fas fa-paper-plane"></i> Send Response
+                                  </button>
+                                </div>
+                              </form>
+                            </div>
+                          </div>
+                        <?php endif; ?>
+                      </div>
                     </div>
                 <?php endforeach; ?>
             <?php endif; ?>
@@ -1619,6 +1720,8 @@ document.addEventListener('DOMContentLoaded', function() {
             formData.append('action', action);
             formData.append('response_comment', comment);
             formData.append('csrf_token', form.querySelector('input[name="csrf_token"]').value);
+            
+
             
             fetch(window.location.href, {
                 method: 'POST',

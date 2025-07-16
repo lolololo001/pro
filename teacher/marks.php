@@ -8,6 +8,7 @@ ini_set('display_errors', 1);
 
 // Load config
 require_once '../config/config.php';
+require_once '../includes/notification_triggers.php';
 
 // Check if teacher is logged in
 if (!isset($_SESSION['teacher_id'])) {
@@ -34,7 +35,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $marks = floatval($_POST['marks']);
         $max_marks = floatval($_POST['max_marks']);
         $term = trim($_POST['term']);
-        $year = intval($_POST['year']);
         $comments = trim($_POST['comments'] ?? '');
 
         // Validate inputs
@@ -42,30 +42,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['teacher_error'] = 'Marks cannot be negative or exceed maximum marks.';
         } else {
             try {
-                // Check if marks already exist for this student, subject, term, and year
-                $check_stmt = $conn->prepare("SELECT id FROM student_marks WHERE student_id = ? AND subject = ? AND term = ? AND year = ?");
-                $check_stmt->bind_param('issi', $student_id, $subject, $term, $year);
+                // Check if marks already exist for this student, subject, and term
+                $check_stmt = $conn->prepare("SELECT id FROM student_marks WHERE student_id = ? AND subject = ? AND term = ?");
+                $check_stmt->bind_param('iss', $student_id, $subject, $term);
                 $check_stmt->execute();
                 $result = $check_stmt->get_result();
                 
                 if ($result->num_rows > 0) {
                     // Update existing marks
-                    $update_stmt = $conn->prepare("UPDATE student_marks SET marks = ?, max_marks = ?, comments = ?, updated_at = NOW() WHERE student_id = ? AND subject = ? AND term = ? AND year = ?");
-                    $update_stmt->bind_param('ddsssi', $marks, $max_marks, $comments, $student_id, $subject, $term, $year);
-                    
+                    $update_stmt = $conn->prepare("UPDATE student_marks SET marks = ?, max_marks = ?, comments = ?, updated_at = NOW() WHERE student_id = ? AND subject = ? AND term = ?");
+                    $update_stmt->bind_param('ddsssi', $marks, $max_marks, $comments, $student_id, $subject, $term);
+
                     if ($update_stmt->execute()) {
-                        $_SESSION['teacher_success'] = 'Marks updated successfully!';
+                        // Get student name for notification
+                        $student_stmt = $conn->prepare("SELECT first_name, last_name FROM students WHERE id = ?");
+                        $student_stmt->bind_param('i', $student_id);
+                        $student_stmt->execute();
+                        $student_result = $student_stmt->get_result();
+                        $student_data = $student_result->fetch_assoc();
+                        $student_name = $student_data['first_name'] . ' ' . $student_data['last_name'];
+                        $student_stmt->close();
+
+                        // Trigger notification to parent
+                        $percentage = round(($marks / $max_marks) * 100, 1);
+                        triggerDetailedMarksNotification($student_id, $subject, $marks, $max_marks, $term, $comments);
+
+                        $_SESSION['teacher_success'] = "Marks updated successfully for $student_name! ($marks/$max_marks - $percentage% in $subject)";
+                        $_SESSION['show_popup'] = true;
                     } else {
                         $_SESSION['teacher_error'] = 'Failed to update marks: ' . $conn->error;
                     }
                     $update_stmt->close();
                 } else {
                     // Insert new marks
-                    $insert_stmt = $conn->prepare("INSERT INTO student_marks (student_id, subject, marks, max_marks, term, year, comments, teacher_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())");
-                    $insert_stmt->bind_param('isddssi', $student_id, $subject, $marks, $max_marks, $term, $year, $comments, $teacher_id);
-                    
+                    $insert_stmt = $conn->prepare("INSERT INTO student_marks (student_id, subject, marks, max_marks, term, comments, teacher_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
+                    $insert_stmt->bind_param('isddssi', $student_id, $subject, $marks, $max_marks, $term, $comments, $teacher_id);
+
                     if ($insert_stmt->execute()) {
-                        $_SESSION['teacher_success'] = 'Marks added successfully!';
+                        // Get student name for notification
+                        $student_stmt = $conn->prepare("SELECT first_name, last_name FROM students WHERE id = ?");
+                        $student_stmt->bind_param('i', $student_id);
+                        $student_stmt->execute();
+                        $student_result = $student_stmt->get_result();
+                        $student_data = $student_result->fetch_assoc();
+                        $student_name = $student_data['first_name'] . ' ' . $student_data['last_name'];
+                        $student_stmt->close();
+
+                        // Trigger notification to parent
+                        $percentage = round(($marks / $max_marks) * 100, 1);
+                        triggerDetailedMarksNotification($student_id, $subject, $marks, $max_marks, $term, $comments);
+
+                        $_SESSION['teacher_success'] = "Marks added successfully for $student_name! ($marks/$max_marks - $percentage% in $subject)";
+                        $_SESSION['show_popup'] = true;
                     } else {
                         $_SESSION['teacher_error'] = 'Failed to add marks: ' . $conn->error;
                     }
@@ -91,14 +119,13 @@ try {
         marks DECIMAL(5,2) NOT NULL,
         max_marks DECIMAL(5,2) NOT NULL DEFAULT 100,
         term VARCHAR(20) NOT NULL,
-        year INT NOT NULL,
         comments TEXT,
         teacher_id INT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
         FOREIGN KEY (teacher_id) REFERENCES teachers(id) ON DELETE CASCADE,
-        UNIQUE KEY unique_marks (student_id, subject, term, year)
+        UNIQUE KEY unique_marks (student_id, subject, term)
     )");
 } catch (Exception $e) {
     error_log("Error creating student_marks table: " . $e->getMessage());
@@ -165,6 +192,25 @@ if (!empty($class_filter)) {
     }
 }
 
+// Get modules for this school
+$modules = [];
+try {
+    $stmt = $conn->prepare('SELECT module_id, module_name, module_code 
+                           FROM modules 
+                           WHERE school_id = ? AND status = "active"
+                           ORDER BY module_name ASC');
+    $stmt->bind_param('i', $school_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    while ($row = $result->fetch_assoc()) {
+        $modules[] = $row;
+    }
+    $stmt->close();
+} catch (Exception $e) {
+    error_log("Error fetching modules: " . $e->getMessage());
+}
+
 // Get existing marks
 $marks_data = [];
 if (!empty($student_filter)) {
@@ -173,7 +219,7 @@ if (!empty($student_filter)) {
                                FROM student_marks sm
                                JOIN students s ON sm.student_id = s.id
                                WHERE sm.student_id = ?
-                               ORDER BY sm.term ASC, sm.year DESC, sm.subject ASC');
+                               ORDER BY sm.term ASC, sm.subject ASC');
         $stmt->bind_param('i', $student_filter);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -702,6 +748,98 @@ $conn->close();
             color: #721c24;
             border: 1px solid #f5c6cb;
         }
+
+        /* Success Popup Modal */
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .popup-modal {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            animation: popupSlideIn 0.3s ease-out;
+        }
+
+        @keyframes popupSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .popup-icon {
+            font-size: 4rem;
+            color: var(--accent-color);
+            margin-bottom: 1rem;
+        }
+
+        .popup-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .popup-message {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 2rem;
+            line-height: 1.5;
+        }
+
+        .popup-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .popup-btn {
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .popup-btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .popup-btn-primary:hover {
+            background: #005a3c;
+            transform: translateY(-1px);
+        }
+
+        .popup-btn-secondary {
+            background: #f8f9fa;
+            color: #666;
+            border: 1px solid #dee2e6;
+        }
+
+        .popup-btn-secondary:hover {
+            background: #e9ecef;
+        }
     </style>
 </head>
 <body>
@@ -807,8 +945,21 @@ $conn->close();
                         <div class="form-grid">
                             <div class="form-group">
                                 <label for="subject">Subject <span style="color: red;">*</span></label>
-                                <input type="text" name="subject" id="subject" class="form-control" required 
-                                       placeholder="e.g., Mathematics, English, Science">
+                                <select name="subject" id="subject" class="form-control" required>
+                                    <option value="">Select Subject</option>
+                                    <?php if (!empty($modules)): ?>
+                                        <?php foreach ($modules as $module): ?>
+                                            <option value="<?php echo htmlspecialchars($module['module_name']); ?>">
+                                                <?php echo htmlspecialchars($module['module_name']); ?>
+                                                <?php if (!empty($module['module_code'])): ?>
+                                                    (<?php echo htmlspecialchars($module['module_code']); ?>)
+                                                <?php endif; ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <option value="" disabled>No modules available</option>
+                                    <?php endif; ?>
+                                </select>
                             </div>
                             
                             <div class="form-group">
@@ -823,18 +974,7 @@ $conn->close();
                                 </select>
                             </div>
                             
-                            <div class="form-group">
-                                <label for="year">Year <span style="color: red;">*</span></label>
-                                <select name="year" id="year" class="form-control" required>
-                                    <option value="">Select Year</option>
-                                    <?php 
-                                    $current_year = date('Y');
-                                    for ($i = $current_year - 2; $i <= $current_year + 1; $i++) {
-                                        echo "<option value=\"$i\">$i</option>";
-                                    }
-                                    ?>
-                                </select>
-                            </div>
+
                             
                             <div class="form-row">
                                 <div class="form-group">
@@ -880,7 +1020,6 @@ $conn->close();
                                 <tr>
                                     <th>Subject</th>
                                     <th>Term</th>
-                                    <th>Year</th>
                                     <th>Marks</th>
                                     <th>Percentage</th>
                                     <th>Grade</th>
@@ -908,7 +1047,6 @@ $conn->close();
                                     <tr>
                                         <td><strong><?php echo htmlspecialchars($mark['subject']); ?></strong></td>
                                         <td><?php echo htmlspecialchars($mark['term']); ?></td>
-                                        <td><?php echo htmlspecialchars($mark['year']); ?></td>
                                         <td>
                                             <strong><?php echo $mark['marks']; ?></strong> / <?php echo $mark['max_marks']; ?>
                                         </td>
@@ -967,6 +1105,27 @@ $conn->close();
         <?php endif; ?>
     </main>
 
+    <!-- Success Popup Modal -->
+    <div id="successPopup" class="popup-overlay">
+        <div class="popup-modal">
+            <div class="popup-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="popup-title">Marks Saved Successfully!</div>
+            <div class="popup-message" id="popupMessage">
+                The student marks have been saved successfully and parents have been notified.
+            </div>
+            <div class="popup-actions">
+                <button class="popup-btn popup-btn-primary" onclick="closeSuccessPopup()">
+                    <i class="fas fa-check"></i> Continue
+                </button>
+                <button class="popup-btn popup-btn-secondary" onclick="addMoreMarks()">
+                    <i class="fas fa-plus"></i> Add More Marks
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Add any JavaScript functionality here
         document.addEventListener('DOMContentLoaded', function() {
@@ -993,6 +1152,57 @@ $conn->close();
                 alert('Delete functionality will be implemented here for mark ID: ' + markId);
             }
         }
+
+        // Form validation
+        document.getElementById('marksForm').addEventListener('submit', function(e) {
+            const marks = parseFloat(document.getElementById('marks').value);
+            const maxMarks = parseFloat(document.getElementById('max_marks').value);
+
+            if (marks > maxMarks) {
+                e.preventDefault();
+                alert('Marks cannot be greater than maximum marks!');
+                return false;
+            }
+        });
+
+        // Success popup functions
+        function showSuccessPopup(message) {
+            document.getElementById('popupMessage').innerHTML = message;
+            document.getElementById('successPopup').style.display = 'flex';
+        }
+
+        function closeSuccessPopup() {
+            document.getElementById('successPopup').style.display = 'none';
+        }
+
+        function addMoreMarks() {
+            closeSuccessPopup();
+            // Reset form for new entry
+            document.getElementById('marksForm').reset();
+            document.getElementById('student_id').focus();
+        }
+
+        // Show popup if marks were just saved
+        <?php if (isset($_SESSION['show_popup']) && $_SESSION['show_popup']): ?>
+            <?php if (isset($_SESSION['teacher_success'])): ?>
+                showSuccessPopup('<?php echo addslashes($_SESSION['teacher_success']); ?>');
+                <?php unset($_SESSION['teacher_success'], $_SESSION['show_popup']); ?>
+            <?php endif; ?>
+        <?php endif; ?>
+
+        // Close popup when clicking outside
+        document.getElementById('successPopup').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeSuccessPopup();
+            }
+        });
+
+        // Close popup with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeSuccessPopup();
+            }
+        });
     </script>
 </body>
 </html> 

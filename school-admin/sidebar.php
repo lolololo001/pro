@@ -60,7 +60,12 @@ if (empty($school_info)) {
         <div class="menu-item <?php echo basename($_SERVER['PHP_SELF']) == 'departments.php' ? 'active' : ''; ?>">
             <i class="fas fa-building"></i>
             <a href="departments.php"><span>Departments</span></a>
-        </div>        <div class="menu-item <?php echo basename($_SERVER['PHP_SELF']) == 'parents.php' ? 'active' : ''; ?>">
+        </div>
+        <div class="menu-item <?php echo basename($_SERVER['PHP_SELF']) == 'modules.php' ? 'active' : ''; ?>">
+            <i class="fas fa-book"></i>
+            <a href="modules.php"><span>Modules</span></a>
+        </div>
+        <div class="menu-item <?php echo basename($_SERVER['PHP_SELF']) == 'parents.php' ? 'active' : ''; ?>">
             <i class="fas fa-users"></i>
             <a href="parents.php"><span>Parents</span></a>
         </div>
@@ -78,11 +83,6 @@ if (empty($school_info)) {
             <i class="fas fa-money-bill-wave"></i>
             <a href="bursars.php"><span>Bursars</span></a>
         </div>
-        <div class="menu-item <?php echo basename($_SERVER['PHP_SELF']) == 'payments.php' ? 'active' : ''; ?>">
-            <i class="fas fa-credit-card"></i>
-            <a href="payments.php"><span>Payments</span></a>
-        </div>
-        
         <div class="menu-heading">Settings</div>
         <div class="menu-item <?php echo basename($_SERVER['PHP_SELF']) == 'settings.php' ? 'active' : ''; ?>">
             <i class="fas fa-cog"></i>

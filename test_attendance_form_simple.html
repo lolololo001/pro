@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Attendance Form</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 200px; }
+        button { padding: 10px 20px; background: #00704a; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #005a3c; }
+        .student-row { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 4px; }
+        .attendance-options { display: flex; gap: 10px; }
+        .attendance-option { margin-right: 15px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Attendance Form</h1>
+    <p>This is a simple test form to verify attendance submission is working.</p>
+    
+    <form method="POST" action="teacher/attendance.php">
+        <div class="form-group">
+            <label for="class_id">Class ID:</label>
+            <input type="number" name="class_id" id="class_id" value="6" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="date">Date:</label>
+            <input type="date" name="date" id="date" value="<?php echo date('Y-m-d'); ?>" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="subject">Subject:</label>
+            <input type="text" name="subject" id="subject" value="Test Subject">
+        </div>
+        
+        <div class="student-row">
+            <h3>Student 1</h3>
+            <div class="attendance-options">
+                <label class="attendance-option">
+                    <input type="radio" name="attendance[102]" value="present" checked> Present
+                </label>
+                <label class="attendance-option">
+                    <input type="radio" name="attendance[102]" value="absent"> Absent
+                </label>
+                <label class="attendance-option">
+                    <input type="radio" name="attendance[102]" value="late"> Late
+                </label>
+                <label class="attendance-option">
+                    <input type="radio" name="attendance[102]" value="excused"> Excused
+                </label>
+            </div>
+        </div>
+        
+        <button type="submit" name="take_attendance">Save Attendance</button>
+    </form>
+    
+    <hr>
+    <h2>📋 Form Data Preview</h2>
+    <p>This form will submit the following data:</p>
+    <ul>
+        <li><strong>Class ID:</strong> 6 (S1A)</li>
+        <li><strong>Date:</strong> Today's date</li>
+        <li><strong>Subject:</strong> Test Subject</li>
+        <li><strong>Student ID 102:</strong> Present</li>
+    </ul>
+    
+    <h2>🔗 Alternative Test</h2>
+    <p>You can also test the full attendance system:</p>
+    <a href="teacher/attendance.php" style="background: #17a2b8; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">
+        🧪 Test Full Attendance System
+    </a>
+</body>
+</html> 

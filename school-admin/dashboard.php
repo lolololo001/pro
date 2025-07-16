@@ -8,6 +8,7 @@ ini_set('display_errors', 1);
 
 // Load config
 require_once '../config/config.php';
+require_once 'admin_notifications.php';
 
 // Add helper function for formatting currency if it doesn't exist
 if (!function_exists('formatCurrency')) {
@@ -724,9 +725,32 @@ try {
                     <span>Dashboard</span>
                 </div>
             </div>
-            <a href="add_announcement.php" class="btn announce-btn" style="background: linear-gradient(135deg, var(--primary-color), #2563eb); color: white; padding: 0.8rem 1.2rem; border-radius: 8px; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; border: none; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: all 0.3s ease;">
-                <i class="fas fa-bullhorn"></i> Add Announcement
-            </a>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <!-- Notification Bell -->
+                <div class="notification-bell-container" style="position: relative;">
+                    <button id="adminNotificationBell" class="notification-bell" style="background: none; border: none; color: #6b7280; font-size: 1.5rem; cursor: pointer; position: relative; padding: 0.5rem; border-radius: 50%; transition: all 0.3s ease;">
+                        <i class="fas fa-bell"></i>
+                        <span id="adminNotificationCount" class="notification-count" style="position: absolute; top: -2px; right: -2px; background: #ef4444; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 0.75rem; display: none; align-items: center; justify-content: center; font-weight: 600;"></span>
+                    </button>
+
+                    <!-- Notification Dropdown -->
+                    <div id="adminNotificationDropdown" class="notification-dropdown" style="position: absolute; top: 100%; right: 0; background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); width: 380px; max-height: 500px; overflow: hidden; z-index: 1000; display: none; border: 1px solid #e5e7eb;">
+                        <div class="notification-header" style="padding: 1rem 1.5rem; border-bottom: 1px solid #f3f4f6; display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="margin: 0; font-size: 1.1rem; color: #111827;">Notifications</h3>
+                            <button id="adminMarkAllRead" style="background: none; border: none; color: #6b7280; font-size: 0.9rem; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 4px; transition: color 0.2s;">
+                                Mark all read
+                            </button>
+                        </div>
+                        <div id="adminNotificationList" class="notification-list" style="max-height: 400px; overflow-y: auto;">
+                            <!-- Notifications will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
+                <a href="add_announcement.php" class="btn announce-btn" style="background: linear-gradient(135deg, var(--primary-color), #2563eb); color: white; padding: 0.8rem 1.2rem; border-radius: 8px; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; border: none; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: all 0.3s ease;">
+                    <i class="fas fa-bullhorn"></i> Add Announcement
+                </a>
+            </div>
         </div>
         
         <!-- Alert Messages -->
@@ -890,13 +914,27 @@ try {
             
             <div class="stat-card">
                 <div class="stat-icon">
-                    <i class="fas fa-credit-card"></i>
+                    <i class="fas fa-cube"></i>
                 </div>
                 <div class="stat-info">
-                    <h3><?php echo formatCurrency($stats['total_revenue']); ?></h3>
-                    <p>Revenue</p>
+                    <h3><?php 
+                    // Check if modules table exists and count modules
+                    $module_count = 0;
+                    try {
+                        $result = $conn->query("SHOW TABLES LIKE 'modules'");
+                        if ($result->num_rows > 0) {
+                            $module_count = getCount($conn, 'SELECT COUNT(*) as count FROM modules WHERE school_id = ?', $school_id);
+                        }
+                    } catch (Exception $e) {
+                        error_log("Error counting modules: " . $e->getMessage());
+                    }
+                    echo $module_count;
+                    ?></h3>
+                    <p>Modules</p>
                 </div>
             </div>
+            
+            <!-- Revenue stat card removed -->
         </div>
         
         <!-- Recent Students -->
@@ -944,57 +982,6 @@ try {
             </div>
         </div>
         
-        <!-- Recent Payments -->
-        <div class="card">
-            <div class="card-header">
-                <h2><i class="fas fa-credit-card mr-2"></i> Recent Payments</h2>
-                <a href="payments.php">View All</a>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Student</th>
-                                <th>Amount</th>
-                                <th>Date</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (empty($recent_payments)): ?>
-                                <tr>
-                                    <td colspan="5" style="text-align: center;">No recent payments found</td>
-                                </tr>
-                            <?php else: ?>
-                                <?php foreach ($recent_payments as $payment): ?>
-                                    <tr>
-                                        <td><?php echo htmlspecialchars($payment['student_name']); ?></td>
-                                        <td><?php echo formatCurrency($payment['amount']); ?></td>
-                                        <td><?php echo formatDate($payment['payment_date']); ?></td>
-                                        <td>
-                                            <?php if ($payment['status'] === 'completed'): ?>
-                                                <span class="status-badge status-completed">Completed</span>
-                                            <?php elseif ($payment['status'] === 'pending'): ?>
-                                                <span class="status-badge status-pending">Pending</span>
-                                            <?php else: ?>
-                                                <span class="status-badge status-inactive">Failed</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <a href="view_payment.php?id=<?php echo $payment['id']; ?>" class="action-btn" title="View">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
         
         <!-- School Overview -->
         <div class="card">
@@ -1013,113 +1000,7 @@ try {
             </div>
         </div>
 
-        <!-- Example: Departments Table -->
-        <div class="card">
-            <div class="card-header">
-                <h2><i class="fas fa-building"></i> Departments</h2>
-                <a href="#" onclick="openModal('addDepartmentModal')" class="btn btn-primary" style="font-size:0.9rem;"><i class="fas fa-plus"></i> Add Department</a>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Department Name</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php
-                            // Fetch departments for this school
-                            $departments = [];
-                            try {
-                                $stmt = $conn->prepare("SELECT * FROM departments WHERE school_id = ? ORDER BY department_name ASC");
-                                $stmt->bind_param('i', $school_id);
-                                $stmt->execute();
-                                $result = $stmt->get_result();
-                                while ($row = $result->fetch_assoc()) {
-                                    $departments[] = $row;
-                                }
-                                $stmt->close();
-                            } catch (Exception $e) {
-                                error_log("Error fetching departments: " . $e->getMessage());
-                            }
-                            ?>
-                            <?php if (empty($departments)): ?>
-                                <tr>
-                                    <td colspan="2" style="text-align:center;">No departments found</td>
-                                </tr>
-                            <?php else: ?>
-                                <?php foreach ($departments as $department): ?>
-                                    <tr>
-                                        <td><?php echo htmlspecialchars($department['department_name']); ?></td>
-                                        <td>
-                                            <button type="button" class="btn btn-primary edit-department-btn" data-id="<?php echo $department['dep_id']; ?>" title="Edit"><i class="fas fa-edit"></i></button>
-                                            <button type="button" class="btn btn-danger delete-department-btn" data-id="<?php echo $department['dep_id']; ?>" title="Delete"><i class="fas fa-trash"></i></button>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Example: Classes Table -->
-        <div class="card">
-            <div class="card-header">
-                <h2><i class="fas fa-school"></i> Classes</h2>
-                <a href="#" onclick="openModal('addClassModal')" class="btn btn-primary" style="font-size:0.9rem;"><i class="fas fa-plus"></i> Add Class</a>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Class Name</th>
-                                <th>Grade Level</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php
-                            // Fetch classes for this school
-                            $classes = [];
-                            try {
-                                $stmt = $conn->prepare("SELECT * FROM classes WHERE school_id = ? ORDER BY grade_level ASC, class_name ASC");
-                                $stmt->bind_param('i', $school_id);
-                                $stmt->execute();
-                                $result = $stmt->get_result();
-                                while ($row = $result->fetch_assoc()) {
-                                    $classes[] = $row;
-                                }
-                                $stmt->close();
-                            } catch (Exception $e) {
-                                error_log("Error fetching classes: " . $e->getMessage());
-                            }
-                            ?>
-                            <?php if (empty($classes)): ?>
-                                <tr>
-                                    <td colspan="3" style="text-align:center;">No classes found</td>
-                                </tr>
-                            <?php else: ?>
-                                <?php foreach ($classes as $class): ?>
-                                    <tr>
-                                        <td><?php echo htmlspecialchars($class['class_name']); ?></td>
-                                        <td><?php echo htmlspecialchars($class['grade_level']); ?></td>
-                                        <td>
-                                            <button type="button" class="btn btn-primary edit-class-btn" data-id="<?php echo $class['id']; ?>" title="Edit"><i class="fas fa-edit"></i></button>
-                                            <button type="button" class="btn btn-danger delete-class-btn" data-id="<?php echo $class['id']; ?>" title="Delete"><i class="fas fa-trash"></i></button>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+        <!-- Departments and Classes tables removed -->
 
     </div>
     
@@ -1564,6 +1445,208 @@ try {
                     }
                 }
             });
+
+            // Admin Notification System
+            class AdminNotificationSystem {
+                constructor() {
+                    this.bell = document.getElementById('adminNotificationBell');
+                    this.dropdown = document.getElementById('adminNotificationDropdown');
+                    this.countBadge = document.getElementById('adminNotificationCount');
+                    this.notificationList = document.getElementById('adminNotificationList');
+                    this.markAllReadBtn = document.getElementById('adminMarkAllRead');
+
+                    this.init();
+                }
+
+                init() {
+                    if (!this.bell) return; // Exit if elements don't exist
+
+                    // Load initial notification count
+                    this.updateNotificationCount();
+
+                    // Set up event listeners
+                    this.bell.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.toggleDropdown();
+                    });
+
+                    this.markAllReadBtn?.addEventListener('click', () => {
+                        this.markAllAsRead();
+                    });
+
+                    // Close dropdown when clicking outside
+                    document.addEventListener('click', (e) => {
+                        if (this.dropdown && !this.dropdown.contains(e.target) && !this.bell.contains(e.target)) {
+                            this.closeDropdown();
+                        }
+                    });
+
+                    // Auto-refresh every 30 seconds
+                    setInterval(() => {
+                        this.updateNotificationCount();
+                    }, 30000);
+                }
+
+                async updateNotificationCount() {
+                    try {
+                        const response = await fetch('notifications_api.php?action=get_count');
+                        const data = await response.json();
+
+                        if (data.count > 0) {
+                            this.countBadge.textContent = data.count > 99 ? '99+' : data.count;
+                            this.countBadge.style.display = 'flex';
+                            this.bell.style.color = '#ef4444';
+                        } else {
+                            this.countBadge.style.display = 'none';
+                            this.bell.style.color = '#6b7280';
+                        }
+                    } catch (error) {
+                        console.error('Error updating notification count:', error);
+                    }
+                }
+
+                async toggleDropdown() {
+                    if (this.dropdown.style.display === 'block') {
+                        this.closeDropdown();
+                    } else {
+                        await this.loadNotifications();
+                        this.dropdown.style.display = 'block';
+                    }
+                }
+
+                closeDropdown() {
+                    this.dropdown.style.display = 'none';
+                }
+
+                async loadNotifications() {
+                    this.notificationList.innerHTML = '<div class="notification-loading" style="padding: 2rem; text-align: center; color: #6b7280;"><i class="fas fa-spinner fa-spin"></i> Loading notifications...</div>';
+
+                    try {
+                        const response = await fetch('notifications_api.php?action=get_notifications&limit=20');
+                        const data = await response.json();
+
+                        if (data.notifications && data.notifications.length > 0) {
+                            this.renderNotifications(data.notifications);
+                        } else {
+                            this.notificationList.innerHTML = '<div style="padding: 2rem; text-align: center; color: #6c757d;"><i class="fas fa-bell-slash"></i><br>No notifications</div>';
+                        }
+                    } catch (error) {
+                        console.error('Error loading notifications:', error);
+                        this.notificationList.innerHTML = '<div style="padding: 2rem; text-align: center; color: #dc3545;"><i class="fas fa-exclamation-triangle"></i><br>Error loading notifications</div>';
+                    }
+                }
+
+                renderNotifications(notifications) {
+                    const html = notifications.map(notification => `
+                        <div class="notification-item ${!notification.is_read ? 'unread' : ''}"
+                             data-id="${notification.id}"
+                             data-reference-table="${notification.reference_table}"
+                             data-reference-id="${notification.reference_id}"
+                             style="padding: 1rem 1.5rem; border-bottom: 1px solid #f3f4f6; cursor: pointer; transition: background-color 0.2s; ${!notification.is_read ? 'background-color: #fef3f2;' : ''}"
+                             onmouseover="this.style.backgroundColor='#f9fafb'"
+                             onmouseout="this.style.backgroundColor='${!notification.is_read ? '#fef3f2' : 'white'}'">
+                            <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                                <div style="color: ${notification.color}; font-size: 1.1rem; margin-top: 0.2rem;">
+                                    <i class="${notification.icon}"></i>
+                                </div>
+                                <div style="flex: 1; min-width: 0;">
+                                    <div style="font-weight: ${!notification.is_read ? '600' : '500'}; color: #111827; margin-bottom: 0.25rem; font-size: 0.9rem;">
+                                        ${notification.title}
+                                    </div>
+                                    <div style="color: #6b7280; font-size: 0.85rem; line-height: 1.4; margin-bottom: 0.5rem;">
+                                        ${notification.message}
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="color: #9ca3af; font-size: 0.75rem;">${notification.time_ago}</span>
+                                        <button class="delete-notification" data-id="${notification.id}" style="background: none; border: none; color: #dc3545; cursor: pointer; padding: 0.25rem; border-radius: 3px; opacity: 0.7;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">
+                                            <i class="fas fa-trash-alt" style="font-size: 0.8rem;"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+
+                    this.notificationList.innerHTML = html;
+
+                    // Add click handlers
+                    this.notificationList.querySelectorAll('.notification-item').forEach(item => {
+                        item.addEventListener('click', (e) => {
+                            if (!e.target.closest('.delete-notification')) {
+                                this.handleNotificationClick(item);
+                            }
+                        });
+                    });
+
+                    this.notificationList.querySelectorAll('.delete-notification').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            this.deleteNotification(btn.dataset.id);
+                        });
+                    });
+                }
+
+                async handleNotificationClick(item) {
+                    const notificationId = item.dataset.id;
+                    const referenceTable = item.dataset.referenceTable;
+                    const referenceId = item.dataset.referenceId;
+
+                    // Mark as read and get redirect URL
+                    try {
+                        const response = await fetch(`notifications_api.php?action=get_redirect_url&notification_id=${notificationId}&reference_table=${referenceTable}&reference_id=${referenceId}`);
+                        const data = await response.json();
+
+                        if (data.redirect_url) {
+                            window.location.href = data.redirect_url;
+                        }
+                    } catch (error) {
+                        console.error('Error handling notification click:', error);
+                    }
+                }
+
+                async markAllAsRead() {
+                    try {
+                        const response = await fetch('notifications_api.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                            },
+                            body: 'action=mark_all_read'
+                        });
+
+                        const data = await response.json();
+                        if (data.success) {
+                            this.updateNotificationCount();
+                            this.loadNotifications();
+                        }
+                    } catch (error) {
+                        console.error('Error marking all as read:', error);
+                    }
+                }
+
+                async deleteNotification(notificationId) {
+                    try {
+                        const response = await fetch('notifications_api.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                            },
+                            body: `action=delete&notification_id=${notificationId}`
+                        });
+
+                        const data = await response.json();
+                        if (data.success) {
+                            this.updateNotificationCount();
+                            this.loadNotifications();
+                        }
+                    } catch (error) {
+                        console.error('Error deleting notification:', error);
+                    }
+                }
+            }
+
+            // Initialize admin notification system
+            new AdminNotificationSystem();
         });
     </script>
 </body>

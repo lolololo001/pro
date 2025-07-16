@@ -23,19 +23,15 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     <i class="fas fa-book"></i> Academics
                 </a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link <?php echo $current_page === 'fees.php' ? 'active' : ''; ?>" href="fees.php">
-                    <i class="fas fa-money-bill"></i> Fees
-                </a>
-            </li>
+            
             <li class="nav-item">
                 <a class="nav-link <?php echo $current_page === 'permissions.php' ? 'active' : ''; ?>" href="permissions.php">
                     <i class="fas fa-key"></i> Permissions
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link <?php echo $current_page === 'feedback.php' ? 'active' : ''; ?>" href="feedback.php">
-                    <i class="fas fa-comment"></i> Feedback
+                <a class="nav-link <?php echo $current_page === 'feedback.php' ? 'active' : ''; ?>" href="#" onclick="showFeedbackForm(event)">
+                    <i class="fas fa-comment"></i> Provide Feedback
                 </a>
             </li>
             <li class="nav-item">

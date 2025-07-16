@@ -21,6 +21,88 @@ try {
 } catch (Exception $e) {
     error_log("Error fetching school info: " . $e->getMessage());
 }
+
+// Handle form submission
+$success_message = '';
+$error_message = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    try {
+        $title = trim($_POST['title'] ?? '');
+        $content = trim($_POST['content'] ?? '');
+        $priority = $_POST['priority'] ?? 'medium';
+        $target_group = $_POST['target_group'] ?? 'all';
+        $publish_date = $_POST['publish_date'] ?? date('Y-m-d');
+        $expiry_date = !empty($_POST['expiry_date']) ? $_POST['expiry_date'] : null;
+
+        // Validation
+        if (empty($title)) {
+            throw new Exception('Title is required');
+        }
+        if (empty($content)) {
+            throw new Exception('Content is required');
+        }
+        if (strlen($title) > 255) {
+            throw new Exception('Title is too long (maximum 255 characters)');
+        }
+
+        // Insert announcement
+        $stmt = $conn->prepare("INSERT INTO announcements (school_id, title, content, publish_date, expiry_date, priority, target_group, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $admin_id = $_SESSION['school_admin_id'];
+        $stmt->bind_param("issssssi", $school_id, $title, $content, $publish_date, $expiry_date, $priority, $target_group, $admin_id);
+
+        if ($stmt->execute()) {
+            $announcement_id = $conn->insert_id;
+            $success_message = "Announcement created successfully!";
+
+            // Trigger notifications to parents
+            require_once '../parent/parent_notifications.php';
+
+            // Get all parents for this school who should receive this announcement
+            $target_condition = "";
+            if ($target_group === 'parents') {
+                $target_condition = "AND 1=1"; // All parents
+            } elseif ($target_group === 'all') {
+                $target_condition = "AND 1=1"; // All parents (announcements for 'all' include parents)
+            } else {
+                $target_condition = "AND 1=0"; // No parents (teachers/students only)
+            }
+
+            if ($target_group === 'parents' || $target_group === 'all') {
+                // Get all parents for this school
+                $parent_stmt = $conn->prepare("
+                    SELECT DISTINCT p.id, p.first_name, p.last_name
+                    FROM parents p
+                    INNER JOIN student_parent sp ON p.id = sp.parent_id
+                    INNER JOIN students s ON sp.student_id = s.id
+                    WHERE s.school_id = ?
+                ");
+                $parent_stmt->bind_param("i", $school_id);
+                $parent_stmt->execute();
+                $parent_result = $parent_stmt->get_result();
+
+                $notification_count = 0;
+                while ($parent_row = $parent_result->fetch_assoc()) {
+                    if (notifyAnnouncement($parent_row['id'], $title, $announcement_id)) {
+                        $notification_count++;
+                    }
+                }
+                $parent_stmt->close();
+
+                $success_message .= " $notification_count parent notifications sent.";
+            }
+
+            // Clear form data
+            $_POST = [];
+        } else {
+            throw new Exception('Failed to create announcement: ' . $conn->error);
+        }
+        $stmt->close();
+
+    } catch (Exception $e) {
+        $error_message = $e->getMessage();
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -235,49 +317,63 @@ try {
             </div>
         </div>
         <div class="form-title"><i class="fas fa-bullhorn"></i> Announcement Form</div>
+
+        <?php if ($success_message): ?>
+            <div style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($success_message); ?>
+            </div>
+        <?php endif; ?>
+
+        <?php if ($error_message): ?>
+            <div style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error_message); ?>
+            </div>
+        <?php endif; ?>
+
         <div class="card">
-            <form action="process_announcement.php" method="POST" enctype="multipart/form-data">
+            <form method="POST">
                 <div class="form-group">
-                    <label for="announcement_title">Announcement Title <span class="required">*</span></label>
-                    <input type="text" id="announcement_title" name="title" class="form-control" required>
+                    <label for="title">Announcement Title <span style="color: red;">*</span></label>
+                    <input type="text" id="title" name="title" class="form-control" value="<?php echo htmlspecialchars($_POST['title'] ?? ''); ?>" required maxlength="255">
                 </div>
+
                 <div class="form-group">
-                    <label for="announcement_text">Announcement Content <span class="required">*</span></label>
-                    <textarea id="announcement_text" name="content" class="form-control" rows="5" required></textarea>
+                    <label for="content">Announcement Content <span style="color: red;">*</span></label>
+                    <textarea id="content" name="content" class="form-control" rows="6" required><?php echo htmlspecialchars($_POST['content'] ?? ''); ?></textarea>
                 </div>
+
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="target_group">Target Group <span class="required">*</span></label>
-                        <select id="target_group" name="target_group" class="form-control" required>
-                            <option value="all">All (Everyone)</option>
-                            <option value="parents">Parents Only</option>
-                            <option value="students">Students Only</option>
-                            <option value="teachers">Teachers Only</option>
-                            <option value="staff">Staff Only</option>
+                        <label for="priority">Priority Level</label>
+                        <select id="priority" name="priority" class="form-control">
+                            <option value="low" <?php echo ($_POST['priority'] ?? '') === 'low' ? 'selected' : ''; ?>>Low</option>
+                            <option value="medium" <?php echo ($_POST['priority'] ?? 'medium') === 'medium' ? 'selected' : ''; ?>>Medium</option>
+                            <option value="high" <?php echo ($_POST['priority'] ?? '') === 'high' ? 'selected' : ''; ?>>High</option>
+                            <option value="urgent" <?php echo ($_POST['priority'] ?? '') === 'urgent' ? 'selected' : ''; ?>>Urgent</option>
                         </select>
                     </div>
+
+                    <div class="form-group">
+                        <label for="target_group">Target Audience</label>
+                        <select id="target_group" name="target_group" class="form-control">
+                            <option value="all" <?php echo ($_POST['target_group'] ?? 'all') === 'all' ? 'selected' : ''; ?>>All Users</option>
+                            <option value="parents" <?php echo ($_POST['target_group'] ?? '') === 'parents' ? 'selected' : ''; ?>>Parents Only</option>
+                            <option value="teachers" <?php echo ($_POST['target_group'] ?? '') === 'teachers' ? 'selected' : ''; ?>>Teachers Only</option>
+                            <option value="students" <?php echo ($_POST['target_group'] ?? '') === 'students' ? 'selected' : ''; ?>>Students Only</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
                     <div class="form-group">
                         <label for="publish_date">Publish Date</label>
-                        <input type="date" id="publish_date" name="publish_date" class="form-control" value="<?php echo date('Y-m-d'); ?>" min="<?php echo date('Y-m-d'); ?>">
+                        <input type="date" id="publish_date" name="publish_date" class="form-control" value="<?php echo $_POST['publish_date'] ?? date('Y-m-d'); ?>">
                     </div>
-                </div>
-                <div class="form-row">
+
                     <div class="form-group">
-                        <label for="expiry_date">Expiry Date</label>
-                        <input type="date" id="expiry_date" name="expiry_date" class="form-control" min="<?php echo date('Y-m-d'); ?>">
+                        <label for="expiry_date">Expiry Date (Optional)</label>
+                        <input type="date" id="expiry_date" name="expiry_date" class="form-control" value="<?php echo $_POST['expiry_date'] ?? ''; ?>">
                     </div>
-                    <div class="form-group">
-                        <label for="priority">Priority</label>
-                        <select id="priority" name="priority" class="form-control">
-                            <option value="low">Low</option>
-                            <option value="medium" selected>Medium</option>
-                            <option value="high">High</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="attachment">Attachment</label>
-                    <input type="file" id="attachment" name="attachment" class="form-control" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png">
                 </div>
                 
                 <div class="form-actions">

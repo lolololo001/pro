@@ -41,6 +41,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $stmt->close();
         }
+        // Try teacher if not found
+        if (!$user) {
+            $stmt = $conn->prepare('SELECT t.id, t.username, t.password, t.name, t.school_id, s.name as school_name 
+                                   FROM teachers t 
+                                   JOIN schools s ON t.school_id = s.id 
+                                   WHERE t.username = ?');
+            $stmt->bind_param('s', $username);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            if ($result && $result->num_rows > 0) {
+                $user = $result->fetch_assoc();
+                $role = 'teacher';
+            } else {
+                // Debug: Check if teacher exists with different query
+                $debug_stmt = $conn->prepare('SELECT COUNT(*) as count FROM teachers WHERE username = ?');
+                $debug_stmt->bind_param('s', $username);
+                $debug_stmt->execute();
+                $debug_result = $debug_stmt->get_result();
+                $teacher_count = $debug_result->fetch_assoc()['count'];
+                
+                // Log debug info (only in development)
+                if (defined('DEVELOPMENT_MODE') && ('DEVELOPMENT_MODE')) {
+                    error_log("Teacher login debug - Username: $username, Found: $teacher_count");
+                }
+                $debug_stmt->close();
+            }
+            $stmt->close();
+        }
         // Try system_admin if not found
         if (!$user) {
             $stmt = $conn->prepare('SELECT id, username, password FROM system_admins WHERE username = ?');
@@ -62,6 +90,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($role === 'parent') {
                 $_SESSION['parent_id'] = $user['id'];
                 $_SESSION['parent_username'] = $user['username'];
+
+                // Update parent last login time for announcement tracking
+                include_once 'includes/announcement_helpers.php';
+                updateParentLastLogin($user['id']);
+
                 header('Location: parent/dashboard.php');
                 exit;
             } elseif ($role === 'school_admin') {
@@ -70,6 +103,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['school_admin_name'] = $user['full_name'];
                 $_SESSION['school_admin_school_id'] = $user['school_id'];
                 header('Location:school-admin/dashboard.php');
+                exit;
+            } elseif ($role === 'teacher') {
+                $_SESSION['teacher_id'] = $user['id'];
+                $_SESSION['teacher_name'] = $user['name'];
+                $_SESSION['teacher_username'] = $user['username'];
+                $_SESSION['teacher_school_id'] = $user['school_id'];
+                $_SESSION['teacher_school_name'] = $user['school_name'];
+                header('Location: teacher/dashboard.php');
                 exit;
             } elseif ($role === 'system_admin') {
                 $_SESSION['system_admin_id'] = $user['id'];
@@ -198,7 +239,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border: 1.5px solid var(--border-color);
             border-radius: 8px;
             font-size: 1rem;
-            background: transparent;
             font-family: 'Poppins', sans-serif;
             transition: border-color 0.3s;
             box-sizing: border-box;
@@ -307,7 +347,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="login-left">
             <i class="fas fa-graduation-cap icon"></i>
             <h1>Welcome Back!</h1>
-            <p>Log in to access your dashboard, manage your school, or connect with your child's progress. SchoolComm brings parents, staff, and students together.</p>
+            <p>Log in to access your dashboard, manage your school, or connect with your child's progress. SchoolComm brings parents, teachers, staff, and students together.</p>
         </div>
         <div class="login-right">
             <div class="login-card">

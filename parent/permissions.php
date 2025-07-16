@@ -47,6 +47,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['permission_request'])
             $stmt->bind_param('iissss', $student_id, $parentId, $request_type, $start_date, $end_date, $request_text);
 
             if ($stmt->execute()) {
+                $request_id = $conn->insert_id;
+
+                // Trigger admin notification
+                require_once '../includes/admin_notification_triggers.php';
+                triggerPermissionRequestNotification($parentId, $student_id, $request_id, $request_type, $request_text);
+
                 $success = 'Your permission request has been submitted successfully.';
             } else {
                 $error = 'Failed to submit your request: ' . $stmt->error;
@@ -521,6 +527,62 @@ try {
                 justify-content: center;
             }
         }
+        .permission-form-efficient {
+            background: #fff;
+            border-radius: 12px;
+            padding: 2rem 1.5rem 1.5rem 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+            margin: 0 auto;
+            max-width: 700px;
+        }
+        .efficient-form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.2rem 2rem;
+            margin-bottom: 1.2rem;
+        }
+        .permission-form-efficient .form-group label {
+            font-weight: 500;
+            margin-bottom: 0.4rem;
+            color: #222;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .permission-form-efficient .form-group select,
+        .permission-form-efficient .form-group input,
+        .permission-form-efficient .form-group textarea {
+            padding: 0.7rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: #f9fafb;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .permission-form-efficient .form-group input:focus,
+        .permission-form-efficient .form-group select:focus,
+        .permission-form-efficient .form-group textarea:focus {
+            outline: none;
+            border-color: #00704a;
+            box-shadow: 0 0 0 2px rgba(0,112,74,0.08);
+        }
+        .permission-form-efficient .form-group textarea {
+            min-height: 90px;
+            resize: vertical;
+        }
+        .permission-form-efficient .form-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.2rem;
+        }
+        @media (max-width: 768px) {
+            .efficient-form-grid {
+                grid-template-columns: 1fr;
+            }
+            .permission-form-efficient {
+                padding: 1.2rem 0.5rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -668,13 +730,14 @@ try {
             </div>
 
             <div class="form-container">
-                <form method="POST" action="permissions.php">
-                    <div class="form-grid">
+                <form method="POST" action="permissions.php" class="permission-form-efficient">
+                    <div class="efficient-form-grid">
                         <div class="form-group">
-                            <label for="student_id">Select Student <span class="required">*</span></label>
+                            <label for="student_id"><i class="fas fa-user-graduate"></i> Select Student <span class="required">*</span></label>
                             <select name="student_id" id="student_id" required>
                                 <option value="">Choose a student...</option>
-                                <?php foreach ($children as $child): ?>
+                                <?php foreach (
+                                    $children as $child): ?>
                                     <option value="<?php echo $child['student_id']; ?>">
                                         <?php echo htmlspecialchars($child['first_name'] . ' ' . $child['last_name']); ?>
                                         <?php if ($child['is_primary']): ?>
@@ -685,9 +748,8 @@ try {
                                 <?php endforeach; ?>
                             </select>
                         </div>
-
                         <div class="form-group">
-                            <label for="request_type">Request Type</label>
+                            <label for="request_type"><i class="fas fa-list"></i> Request Type</label>
                             <select name="request_type" id="request_type">
                                 <option value="absence">Absence Request</option>
                                 <option value="early_leave">Early Leave</option>
@@ -697,23 +759,19 @@ try {
                                 <option value="other">Other</option>
                             </select>
                         </div>
-
                         <div class="form-group">
-                            <label for="start_date">Start Date</label>
+                            <label for="start_date"><i class="fas fa-calendar-alt"></i> Start Date</label>
                             <input type="date" name="start_date" id="start_date" value="<?php echo date('Y-m-d'); ?>">
                         </div>
-
                         <div class="form-group">
-                            <label for="end_date">End Date</label>
+                            <label for="end_date"><i class="fas fa-calendar-check"></i> End Date</label>
                             <input type="date" name="end_date" id="end_date" value="<?php echo date('Y-m-d'); ?>">
                         </div>
                     </div>
-
                     <div class="form-group">
-                        <label for="request_text">Reason for Request <span class="required">*</span></label>
+                        <label for="request_text"><i class="fas fa-align-left"></i> Reason for Request <span class="required">*</span></label>
                         <textarea name="request_text" id="request_text" rows="4" placeholder="Please provide detailed reason for your permission request..." required></textarea>
                     </div>
-
                     <div class="form-actions">
                         <button type="submit" name="permission_request" class="btn btn-primary">
                             <i class="fas fa-paper-plane"></i> Submit Request

@@ -244,6 +244,22 @@ window.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 <?php unset($_SESSION['student_error']); endif; ?>
+
+<?php if (!empty($_SESSION['success_message'])): ?>
+<script>
+window.addEventListener('DOMContentLoaded', function() {
+    alert("<?php echo addslashes($_SESSION['success_message']); ?>");
+});
+</script>
+<?php unset($_SESSION['success_message']); endif; ?>
+
+<?php if (!empty($_SESSION['error_message'])): ?>
+<script>
+window.addEventListener('DOMContentLoaded', function() {
+    alert("<?php echo addslashes($_SESSION['error_message']); ?>");
+});
+</script>
+<?php unset($_SESSION['error_message']); endif; ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1189,7 +1205,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     <button onclick="exportStudentData()" class="btn export-btn" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem; font-size: 0.9rem; border-radius: 6px; background-color: #f8f9fa; border: 1px solid #dee2e6; color: #495057; transition: all 0.3s ease;">
                         <i class="fas fa-download"></i> Export List
                     </button>
-                    <button class="btn btn-primary" onclick="openModal('addStudentMultiStepModal')" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; font-size: 0.9rem; border-radius: 6px; transition: all 0.3s ease;">
+                    <button class="btn btn-primary" onclick="window.location.href='student_registration.php'" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; font-size: 0.9rem; border-radius: 6px; transition: all 0.3s ease;">
                         <i class="fas fa-user-plus"></i> Add New Student
                     </button>
                 </div>
@@ -1227,6 +1243,30 @@ window.addEventListener('DOMContentLoaded', function() {
                             <a href="students.php?status=shifted" class="status-btn status-shifted <?php echo isset($_GET['status']) && $_GET['status'] === 'shifted' ? 'active' : ''; ?>" style="padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.85rem; text-decoration: none; color: <?php echo isset($_GET['status']) && $_GET['status'] === 'shifted' ? 'white' : '#9c27b0'; ?>; background-color: <?php echo isset($_GET['status']) && $_GET['status'] === 'shifted' ? '#9c27b0' : 'rgba(156, 39, 176, 0.1)'; ?>; transition: all 0.3s ease; border: none; font-weight: 500;">
                                 <i class="fas fa-exchange-alt"></i> Shifted
                             </a>
+                        </div>
+                    </div>
+
+                    <!-- Class Filter -->
+                    <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+                        <div style="font-weight: 600; color: var(--primary-color); font-size: 0.95rem;">Filter by Class:</div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <select id="classFilter" onchange="filterStudentsByClass()" style="padding: 0.5rem 1rem; border-radius: 6px; border: 1px solid #ddd; font-size: 0.9rem; background: white; min-width: 200px;">
+                                <option value="">All Classes</option>
+                                <?php foreach ($classes as $class): ?>
+                                    <option value="<?php echo htmlspecialchars($class['class_name']); ?>">
+                                        <?php echo htmlspecialchars($class['class_name']); ?>
+                                        <?php if (!empty($class['grade_level'])): ?>
+                                            (Grade <?php echo htmlspecialchars($class['grade_level']); ?>)
+                                        <?php endif; ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <button onclick="clearClassFilter()" style="padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid #ddd; background: #f8f9fa; color: #6c757d; font-size: 0.85rem; cursor: pointer;">
+                                <i class="fas fa-times"></i> Clear
+                            </button>
+                        </div>
+                        <div id="studentCount" style="font-size: 0.9rem; color: #6c757d; font-weight: 500;">
+                            Students List (<?php echo count($students ?? []); ?> students)
                         </div>
                     </div>
 
@@ -2039,6 +2079,74 @@ window.addEventListener('DOMContentLoaded', function() {
             searchInput.value = '';
             searchStudents();
             searchInput.focus();
+        }
+
+        // Filter students by class
+        function filterStudentsByClass() {
+            const selectedClass = document.getElementById('classFilter').value.toLowerCase().trim();
+            const searchTerm = document.getElementById('studentSearch').value.toLowerCase().trim();
+            const tableRows = document.querySelectorAll('.data-table tbody tr');
+            const emptyMessage = document.getElementById('students-table-empty-search');
+            const tableContainer = document.querySelector('.table-responsive');
+            const studentCountElement = document.getElementById('studentCount');
+            let visibleCount = 0;
+
+            tableRows.forEach(row => {
+                const name = row.cells[0].textContent.toLowerCase();
+                const regNumber = row.cells[1].textContent.toLowerCase();
+                const className = row.cells[2].textContent.toLowerCase();
+                const department = row.cells[3] ? row.cells[3].textContent.toLowerCase() : '';
+                const gender = row.cells[4] ? row.cells[4].textContent.toLowerCase() : '';
+                const parentName = row.cells[5] ? row.cells[5].textContent.toLowerCase() : '';
+                const contact = row.cells[6] ? row.cells[6].textContent.toLowerCase() : '';
+
+                // Check if matches search term
+                const matchesSearch = searchTerm === '' ||
+                    name.includes(searchTerm) ||
+                    regNumber.includes(searchTerm) ||
+                    className.includes(searchTerm) ||
+                    department.includes(searchTerm) ||
+                    gender.includes(searchTerm) ||
+                    parentName.includes(searchTerm) ||
+                    contact.includes(searchTerm);
+
+                // Check if matches selected class
+                const matchesClass = selectedClass === '' || className.includes(selectedClass);
+
+                if (matchesSearch && matchesClass) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Update student count
+            if (studentCountElement) {
+                const classText = selectedClass ? ` in ${document.getElementById('classFilter').options[document.getElementById('classFilter').selectedIndex].text}` : '';
+                studentCountElement.textContent = `Students List (${visibleCount} students${classText})`;
+            }
+
+            // Show/hide empty search message
+            if (visibleCount === 0) {
+                if (emptyMessage) emptyMessage.style.display = 'block';
+                if (tableContainer) tableContainer.style.display = 'none';
+            } else {
+                if (emptyMessage) emptyMessage.style.display = 'none';
+                if (tableContainer) tableContainer.style.display = '';
+            }
+        }
+
+        // Clear class filter
+        function clearClassFilter() {
+            const classFilter = document.getElementById('classFilter');
+            classFilter.value = '';
+            filterStudentsByClass();
+        }
+
+        // Update the existing searchStudents function to work with class filter
+        function searchStudents() {
+            filterStudentsByClass(); // Use the combined filter function
         }
         
         // Update empty search results message

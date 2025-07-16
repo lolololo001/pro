@@ -8,6 +8,7 @@ ini_set('display_errors', 1);
 
 // Load config
 require_once '../config/config.php';
+require_once '../includes/notification_triggers.php';
 
 // Check if teacher is logged in
 if (!isset($_SESSION['teacher_id'])) {
@@ -19,6 +20,9 @@ if (!isset($_SESSION['teacher_id'])) {
 $teacher_id = $_SESSION['teacher_id'] ?? 0;
 $school_id = $_SESSION['teacher_school_id'] ?? 0;
 
+// Debug: Log session data
+error_log("Session data - Teacher ID: $teacher_id, School ID: $school_id");
+
 if (!$teacher_id || !$school_id) {
     die("Error: Teacher session not found. Please log in again.");
 }
@@ -29,64 +33,170 @@ $conn = getDbConnection();
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['take_attendance'])) {
+        // Debug: Log form submission
+        error_log("Form submitted: " . print_r($_POST, true));
+        
         $class_id = intval($_POST['class_id']);
         $date = $_POST['date'];
         $attendance_data = $_POST['attendance'] ?? [];
         
+        // Debug: Log processed data
+        error_log("Processed data - Class ID: $class_id, Date: $date, Attendance count: " . count($attendance_data));
+        
         try {
-            // Check if attendance already exists for this class and date
-            $check_stmt = $conn->prepare("SELECT id FROM student_attendance WHERE class_id = ? AND date = ?");
-            $check_stmt->bind_param('is', $class_id, $date);
-            $check_stmt->execute();
-            $result = $check_stmt->get_result();
-            
-            if ($result->num_rows > 0) {
-                // Update existing attendance
-                foreach ($attendance_data as $student_id => $status) {
-                    $update_stmt = $conn->prepare("UPDATE student_attendance SET status = ?, updated_at = NOW() WHERE class_id = ? AND student_id = ? AND date = ?");
-                    $update_stmt->bind_param('siis', $status, $class_id, $student_id, $date);
-                    $update_stmt->execute();
-                    $update_stmt->close();
+            $subject = $_POST['subject'] ?? '';
+
+            // Validate input data
+            if (empty($attendance_data)) {
+                throw new Exception("No attendance data received");
+            }
+
+            if (empty($class_id) || empty($date)) {
+                throw new Exception("Missing required data: class_id or date");
+            }
+
+            $processed_count = 0;
+            $error_count = 0;
+            $notification_count = 0;
+            $attendance_summary = ['present' => 0, 'absent' => 0, 'late' => 0, 'excused' => 0];
+
+            // Process each student's attendance
+            foreach ($attendance_data as $student_id => $status) {
+                // Check if attendance already exists
+                $check_query = "SELECT id FROM student_attendance WHERE class_id = ? AND student_id = ? AND date = ?";
+                $check_params = [$class_id, $student_id, $date];
+                $check_types = 'iis';
+
+                if (!empty($subject)) {
+                    $check_query .= " AND subject = ?";
+                    $check_params[] = $subject;
+                    $check_types .= 's';
                 }
-                $_SESSION['teacher_success'] = 'Attendance updated successfully!';
-            } else {
-                // Insert new attendance records
-                foreach ($attendance_data as $student_id => $status) {
-                    $insert_stmt = $conn->prepare("INSERT INTO student_attendance (class_id, student_id, date, status, teacher_id, created_at) VALUES (?, ?, ?, ?, ?, NOW())");
-                    $insert_stmt->bind_param('iissi', $class_id, $student_id, $date, $status, $teacher_id);
-                    $insert_stmt->execute();
+
+                $check_stmt = $conn->prepare($check_query);
+                $check_stmt->bind_param($check_types, ...$check_params);
+                $check_stmt->execute();
+                $result = $check_stmt->get_result();
+
+                if ($result->num_rows > 0) {
+                    // Update existing attendance
+                    $update_query = "UPDATE student_attendance SET status = ?, updated_at = NOW() WHERE class_id = ? AND student_id = ? AND date = ?";
+                    $update_params = [$status, $class_id, $student_id, $date];
+                    $update_types = 'siis';
+
+                    if (!empty($subject)) {
+                        $update_query .= " AND subject = ?";
+                        $update_params[] = $subject;
+                        $update_types .= 's';
+                    }
+
+                    $update_stmt = $conn->prepare($update_query);
+                    $update_stmt->bind_param($update_types, ...$update_params);
+
+                    if ($update_stmt->execute()) {
+                        $processed_count++;
+                        $attendance_summary[$status]++;
+
+                        // Send notification to parent
+                        if (triggerDetailedAttendanceNotification($student_id, $status, $date, null, $subject, '')) {
+                            $notification_count++;
+                        }
+                    } else {
+                        $error_count++;
+                        error_log("Failed to update attendance for student $student_id: " . $conn->error);
+                    }
+                    $update_stmt->close();
+                } else {
+                    // Insert new attendance record
+                    $insert_query = "INSERT INTO student_attendance (class_id, student_id, date, status, teacher_id, subject, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())";
+                    $insert_params = [$class_id, $student_id, $date, $status, $teacher_id, $subject];
+                    $insert_stmt = $conn->prepare($insert_query);
+                    $insert_stmt->bind_param('iissis', ...$insert_params);
+
+                    if ($insert_stmt->execute()) {
+                        $processed_count++;
+                        $attendance_summary[$status]++;
+
+                        // Send notification to parent
+                        if (triggerDetailedAttendanceNotification($student_id, $status, $date, null, $subject, '')) {
+                            $notification_count++;
+                        }
+                    } else {
+                        $error_count++;
+                        error_log("Failed to insert attendance for student $student_id: " . $conn->error);
+                    }
                     $insert_stmt->close();
                 }
-                $_SESSION['teacher_success'] = 'Attendance recorded successfully!';
+
+                $check_stmt->close();
             }
-            $check_stmt->close();
+
+            // Enhanced success message with detailed attendance report
+            $subject_text = !empty($subject) ? " for $subject" : "";
+            $report = "Present: {$attendance_summary['present']}, Absent: {$attendance_summary['absent']}, Late: {$attendance_summary['late']}, Excused: {$attendance_summary['excused']}";
+
+            if ($error_count > 0) {
+                $_SESSION['teacher_success'] = "Attendance partially saved$subject_text! Report: $report. $processed_count records saved, $error_count errors. $notification_count parent notifications sent.";
+            } else {
+                $_SESSION['teacher_success'] = "Attendance saved successfully$subject_text! Report: $report. All $processed_count records stored in database. $notification_count parent notifications sent.";
+            }
+
+            $_SESSION['show_popup'] = true;
+            $_SESSION['attendance_saved'] = true; // Flag to show confirmation popup
+            $_SESSION['processed_count'] = $processed_count; // Store processed count for popup
+            
+            // Log successful attendance submission
+            error_log("Attendance saved successfully: Class $class_id, Date $date, Subject: $subject, Students: " . count($attendance_data) . ", Processed: $processed_count, Errors: $error_count, Notifications: $notification_count");
+
         } catch (Exception $e) {
-            $_SESSION['teacher_error'] = 'System error: ' . $e->getMessage();
+            $_SESSION['teacher_error'] = 'Error saving attendance: ' . $e->getMessage();
+            error_log("Attendance submission error: " . $e->getMessage());
         }
         
-        header('Location: attendance.php?class_id=' . $class_id . '&date=' . $date);
+        // Stay on the same page with current parameters
+        $redirect_url = 'attendance.php?class_id=' . $class_id . '&date=' . $date;
+        if (!empty($subject)) {
+            $redirect_url .= '&subject=' . urlencode($subject);
+        }
+        header('Location: ' . $redirect_url);
         exit;
     }
 }
 
 // Create student_attendance table if it doesn't exist
 try {
-    $conn->query("CREATE TABLE IF NOT EXISTS student_attendance (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        class_id INT NOT NULL,
-        student_id INT NOT NULL,
-        date DATE NOT NULL,
-        status ENUM('present', 'absent', 'late', 'excused') NOT NULL DEFAULT 'present',
-        teacher_id INT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE,
-        FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
-        FOREIGN KEY (teacher_id) REFERENCES teachers(id) ON DELETE CASCADE,
-        UNIQUE KEY unique_attendance (class_id, student_id, date)
-    )");
+    // First, check if table exists and if subject column exists
+    $table_check = $conn->query("SHOW TABLES LIKE 'student_attendance'");
+
+    if ($table_check->num_rows > 0) {
+        // Table exists, check if subject column exists
+        $column_check = $conn->query("SHOW COLUMNS FROM student_attendance LIKE 'subject'");
+
+        if ($column_check->num_rows == 0) {
+            // Add subject column if it doesn't exist
+            $conn->query("ALTER TABLE student_attendance ADD COLUMN subject VARCHAR(100) AFTER date");
+            error_log("Added subject column to student_attendance table");
+        }
+    } else {
+        // Create new table
+        $conn->query("CREATE TABLE student_attendance (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            class_id INT NOT NULL,
+            student_id INT NOT NULL,
+            date DATE NOT NULL,
+            subject VARCHAR(100),
+            status ENUM('present', 'absent', 'late', 'excused') NOT NULL DEFAULT 'present',
+            teacher_id INT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_class_date (class_id, date),
+            INDEX idx_student_date (student_id, date),
+            INDEX idx_teacher (teacher_id)
+        )");
+        error_log("Created student_attendance table");
+    }
 } catch (Exception $e) {
-    error_log("Error creating student_attendance table: " . $e->getMessage());
+    error_log("Error with student_attendance table: " . $e->getMessage());
 }
 
 // Get teacher information
@@ -105,6 +215,7 @@ try {
 
 // Get filter parameters
 $class_filter = $_GET['class_id'] ?? '';
+$subject_filter = $_GET['subject'] ?? '';
 $date_filter = $_GET['date'] ?? date('Y-m-d');
 
 // Get assigned classes
@@ -124,6 +235,52 @@ try {
     $stmt->close();
 } catch (Exception $e) {
     error_log("Error fetching assigned classes: " . $e->getMessage());
+}
+
+// Get subjects for the selected class
+$class_subjects = [];
+if (!empty($class_filter)) {
+    try {
+        // First try to get subjects from modules table
+        $stmt = $conn->prepare('SELECT DISTINCT m.module_id, m.module_name as module_name, m.module_code
+                               FROM modules m
+                               WHERE m.school_id = ? AND m.status = "active"
+                               ORDER BY m.module_name ASC');
+        $stmt->bind_param('i', $school_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        while ($row = $result->fetch_assoc()) {
+            $class_subjects[] = $row;
+        }
+        $stmt->close();
+
+        // If no modules found, add common subjects
+        if (empty($class_subjects)) {
+            $common_subjects = [
+                ['module_name' => 'Mathematics', 'module_code' => 'MATH'],
+                ['module_name' => 'English', 'module_code' => 'ENG'],
+                ['module_name' => 'Science', 'module_code' => 'SCI'],
+                ['module_name' => 'Social Studies', 'module_code' => 'SS'],
+                ['module_name' => 'Physical Education', 'module_code' => 'PE'],
+                ['module_name' => 'Art', 'module_code' => 'ART'],
+                ['module_name' => 'Music', 'module_code' => 'MUS'],
+                ['module_name' => 'Computer Science', 'module_code' => 'CS']
+            ];
+            $class_subjects = $common_subjects;
+        }
+    } catch (Exception $e) {
+        error_log("Error fetching class subjects: " . $e->getMessage());
+        // Fallback to common subjects
+        $common_subjects = [
+            ['module_name' => 'Mathematics', 'module_code' => 'MATH'],
+            ['module_name' => 'English', 'module_code' => 'ENG'],
+            ['module_name' => 'Science', 'module_code' => 'SCI'],
+            ['module_name' => 'Social Studies', 'module_code' => 'SS'],
+            ['module_name' => 'Physical Education', 'module_code' => 'PE']
+        ];
+        $class_subjects = $common_subjects;
+    }
 }
 
 // Get students and their attendance for selected class and date
@@ -146,10 +303,19 @@ if (!empty($class_filter)) {
         }
         $stmt->close();
         
-        // Get existing attendance for the date
-        $stmt = $conn->prepare('SELECT student_id, status FROM student_attendance 
-                               WHERE class_id = ? AND date = ?');
-        $stmt->bind_param('is', $class_filter, $date_filter);
+        // Get existing attendance for the date and subject (if specified)
+        $attendance_query = 'SELECT student_id, status FROM student_attendance WHERE class_id = ? AND date = ?';
+        $attendance_params = [$class_filter, $date_filter];
+        $attendance_types = 'is';
+        
+        if (!empty($subject_filter)) {
+            $attendance_query .= ' AND subject = ?';
+            $attendance_params[] = $subject_filter;
+            $attendance_types .= 's';
+        }
+        
+        $stmt = $conn->prepare($attendance_query);
+        $stmt->bind_param($attendance_types, ...$attendance_params);
         $stmt->execute();
         $result = $stmt->get_result();
         
@@ -162,27 +328,7 @@ if (!empty($class_filter)) {
     }
 }
 
-// Get attendance statistics
-$attendance_stats = [];
-if (!empty($class_filter)) {
-    try {
-        $stmt = $conn->prepare('SELECT 
-                                   COUNT(*) as total_students,
-                                   SUM(CASE WHEN status = "present" THEN 1 ELSE 0 END) as present,
-                                   SUM(CASE WHEN status = "absent" THEN 1 ELSE 0 END) as absent,
-                                   SUM(CASE WHEN status = "late" THEN 1 ELSE 0 END) as late,
-                                   SUM(CASE WHEN status = "excused" THEN 1 ELSE 0 END) as excused
-                               FROM student_attendance 
-                               WHERE class_id = ? AND date = ?');
-        $stmt->bind_param('is', $class_filter, $date_filter);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $attendance_stats = $result->fetch_assoc();
-        $stmt->close();
-    } catch (Exception $e) {
-        error_log("Error fetching attendance stats: " . $e->getMessage());
-    }
-}
+
 
 // Get school info
 $school_info = [];
@@ -538,38 +684,7 @@ $conn->close();
             box-shadow: 0 0 0 0.2rem rgba(0, 112, 74, 0.15);
         }
 
-        /* Stats Grid */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
 
-        .stat-card {
-            background: var(--light-color);
-            padding: 1rem;
-            border-radius: var(--radius-md);
-            box-shadow: var(--shadow-sm);
-            border: 1px solid var(--border-color);
-            text-align: center;
-        }
-
-        .stat-number {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-label {
-            font-size: 0.9rem;
-            color: #666;
-        }
-
-        .stat-present .stat-number { color: var(--accent-color); }
-        .stat-absent .stat-number { color: var(--danger-color); }
-        .stat-late .stat-number { color: var(--warning-color); }
-        .stat-excused .stat-number { color: var(--info-color); }
 
         /* Card Styles */
         .card {
@@ -766,20 +881,197 @@ $conn->close();
             border-radius: var(--radius-sm);
             margin-bottom: 1rem;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 0.5rem;
+            position: relative;
+            animation: slideInDown 0.3s ease-out;
+        }
+
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert-close {
+            background: none;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease;
+        }
+
+        .alert-close:hover {
+            background-color: rgba(0, 0, 0, 0.1);
         }
 
         .alert-success {
             background: #d4edda;
             color: #155724;
             border: 1px solid #c3e6cb;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .alert-danger {
             background: #f8d7da;
             color: #721c24;
             border: 1px solid #f5c6cb;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Success Popup Modal */
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .popup-modal {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            animation: popupSlideIn 0.3s ease-out;
+        }
+
+        @keyframes popupSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .popup-icon {
+            font-size: 4rem;
+            color: var(--accent-color);
+            margin-bottom: 1rem;
+        }
+
+        .popup-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .popup-message {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 2rem;
+            line-height: 1.5;
+        }
+
+        .popup-details {
+            text-align: left;
+        }
+
+        .popup-details p {
+            margin-bottom: 1rem;
+        }
+
+        .popup-details code {
+            background: #f8f9fa;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #e83e8c;
+        }
+
+        .storage-info {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .info-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .info-item i {
+            color: var(--primary-color);
+            width: 16px;
+        }
+
+        .popup-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .popup-btn {
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .popup-btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .popup-btn-primary:hover {
+            background: #005a3c;
+            transform: translateY(-1px);
+        }
+
+        .popup-btn-secondary {
+            background: #f8f9fa;
+            color: #666;
+            border: 1px solid #dee2e6;
+        }
+
+        .popup-btn-secondary:hover {
+            background: #e9ecef;
         }
     </style>
 </head>
@@ -812,21 +1104,49 @@ $conn->close();
 
         <!-- Alert Messages -->
         <?php if (isset($_SESSION['teacher_success'])): ?>
-            <div class="alert alert-success">
-                <i class="fas fa-check-circle"></i> <?php
-                echo $_SESSION['teacher_success'];
-                unset($_SESSION['teacher_success']);
-                ?>
+            <div class="alert alert-success" id="successAlert">
+                <i class="fas fa-check-circle"></i> 
+                <div class="alert-content">
+                    <strong>✅ Attendance Saved Successfully!</strong><br>
+                    <?php
+                    echo $_SESSION['teacher_success'];
+                    unset($_SESSION['teacher_success']);
+                    ?>
+                </div>
+                <button type="button" class="alert-close" onclick="this.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
         <?php endif; ?>
 
         <?php if (isset($_SESSION['teacher_error'])): ?>
-            <div class="alert alert-danger">
-                <i class="fas fa-exclamation-circle"></i> <?php
-                echo $_SESSION['teacher_error'];
-                unset($_SESSION['teacher_error']);
-                ?>
+            <div class="alert alert-danger" id="errorAlert">
+                <i class="fas fa-exclamation-circle"></i> 
+                <div class="alert-content">
+                    <strong>❌ Error Occurred!</strong><br>
+                    <?php
+                    echo $_SESSION['teacher_error'];
+                    unset($_SESSION['teacher_error']);
+                    ?>
+                </div>
+                <button type="button" class="alert-close" onclick="this.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
+        <?php endif; ?>
+
+        <?php if (isset($_SESSION['attendance_saved']) && $_SESSION['attendance_saved']): ?>
+            <div class="alert alert-success" id="confirmationAlert" style="background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb;">
+                <i class="fas fa-info-circle"></i> 
+                <div class="alert-content">
+                    <strong>📊 Attendance Confirmation</strong><br>
+                    Your attendance data has been successfully saved to the database. You can continue taking attendance for other classes or dates.
+                </div>
+                <button type="button" class="alert-close" onclick="this.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <?php unset($_SESSION['attendance_saved']); ?>
         <?php endif; ?>
 
         <!-- Filter Section -->
@@ -851,41 +1171,46 @@ $conn->close();
                     <input type="date" name="date" id="date_filter" class="form-control" 
                            value="<?php echo htmlspecialchars($date_filter); ?>" onchange="this.form.submit()">
                 </div>
+                
+                <?php if (!empty($class_subjects)): ?>
+                    <div class="form-group">
+                        <label for="subject_filter">Select Subject</label>
+                        <select name="subject" id="subject_filter" class="form-control" onchange="this.form.submit()">
+                            <option value="">All Subjects</option>
+                            <?php foreach ($class_subjects as $subject): ?>
+                                <option value="<?php echo htmlspecialchars($subject['module_name']); ?>" 
+                                        <?php echo $subject_filter == $subject['module_name'] ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($subject['module_name']); ?>
+                                    <?php if (!empty($subject['module_code'])): ?>
+                                        (<?php echo htmlspecialchars($subject['module_code']); ?>)
+                                    <?php endif; ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                <?php endif; ?>
             </form>
         </div>
 
-        <!-- Attendance Statistics -->
-        <?php if (!empty($attendance_stats) && $attendance_stats['total_students'] > 0): ?>
-            <div class="stats-grid">
-                <div class="stat-card stat-present">
-                    <div class="stat-number"><?php echo $attendance_stats['present'] ?? 0; ?></div>
-                    <div class="stat-label">Present</div>
-                </div>
-                <div class="stat-card stat-absent">
-                    <div class="stat-number"><?php echo $attendance_stats['absent'] ?? 0; ?></div>
-                    <div class="stat-label">Absent</div>
-                </div>
-                <div class="stat-card stat-late">
-                    <div class="stat-number"><?php echo $attendance_stats['late'] ?? 0; ?></div>
-                    <div class="stat-label">Late</div>
-                </div>
-                <div class="stat-card stat-excused">
-                    <div class="stat-number"><?php echo $attendance_stats['excused'] ?? 0; ?></div>
-                    <div class="stat-label">Excused</div>
-                </div>
-            </div>
-        <?php endif; ?>
+
 
         <!-- Take Attendance -->
         <?php if (!empty($students)): ?>
             <div class="card">
                 <div class="card-header">
-                    <h3><i class="fas fa-edit"></i> Take Attendance for <?php echo date('l, F d, Y', strtotime($date_filter)); ?></h3>
+                    <h3><i class="fas fa-edit"></i> Take Attendance for <?php echo date('l, F d, Y', strtotime($date_filter)); ?>
+                        <?php if (!empty($subject_filter)): ?>
+                            - <?php echo htmlspecialchars($subject_filter); ?>
+                        <?php endif; ?>
+                    </h3>
                 </div>
                 <div class="card-body">
                     <form method="POST" action="attendance.php" class="attendance-form">
                         <input type="hidden" name="class_id" value="<?php echo $class_filter; ?>">
                         <input type="hidden" name="date" value="<?php echo $date_filter; ?>">
+                        <?php if (!empty($subject_filter)): ?>
+                            <input type="hidden" name="subject" value="<?php echo htmlspecialchars($subject_filter); ?>">
+                        <?php endif; ?>
                         
                         <?php foreach ($students as $student): ?>
                             <div class="student-row">
@@ -928,9 +1253,12 @@ $conn->close();
                         <?php endforeach; ?>
                         
                         <div style="margin-top: 2rem; text-align: right;">
-                            <button type="submit" name="take_attendance" class="btn btn-primary">
+                            <button type="submit" name="take_attendance" class="btn btn-primary" id="saveAttendanceBtn">
                                 <i class="fas fa-save"></i> Save Attendance
                             </button>
+                            <div class="save-status" id="saveStatus" style="display: none; margin-top: 0.5rem; font-size: 0.9rem; color: #666;">
+                                <i class="fas fa-info-circle"></i> Click "Save Attendance" to record the attendance data
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -960,10 +1288,48 @@ $conn->close();
         <?php endif; ?>
     </main>
 
+    <!-- Success Popup Modal -->
+    <div id="successPopup" class="popup-overlay">
+        <div class="popup-modal">
+            <div class="popup-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="popup-title">Attendance Stored Successfully!</div>
+            <div class="popup-message" id="popupMessage">
+                <div class="popup-details">
+                    <p><strong>✅ Database Storage Confirmed</strong></p>
+                    <p>Your attendance data has been successfully stored in the <code>student_attendance</code> table.</p>
+                    <div class="storage-info">
+                        <div class="info-item">
+                            <i class="fas fa-database"></i>
+                            <span>Records stored in database</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-calendar"></i>
+                            <span>Date: <span id="attendanceDate"></span></span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-book"></i>
+                            <span>Subject: <span id="attendanceSubject"></span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="popup-actions">
+                <button class="popup-btn popup-btn-primary" onclick="closeSuccessPopup()">
+                    <i class="fas fa-check"></i> Continue
+                </button>
+                <button class="popup-btn popup-btn-secondary" onclick="takeMoreAttendance()">
+                    <i class="fas fa-calendar-check"></i> Take More Attendance
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // Add any JavaScript functionality here
+        // Enhanced JavaScript functionality
         document.addEventListener('DOMContentLoaded', function() {
-            // Auto-hide alerts after 5 seconds
+            // Auto-hide alerts after 8 seconds (increased for better readability)
             setTimeout(function() {
                 const alerts = document.querySelectorAll('.alert');
                 alerts.forEach(function(alert) {
@@ -972,7 +1338,7 @@ $conn->close();
                         alert.remove();
                     }, 300);
                 });
-            }, 5000);
+            }, 8000);
 
             // Set default attendance to present if none selected
             const studentRows = document.querySelectorAll('.student-row');
@@ -987,6 +1353,116 @@ $conn->close();
                     }
                 }
             });
+
+            // Enhanced form submission handling
+            const attendanceForm = document.querySelector('.attendance-form');
+            if (attendanceForm) {
+                attendanceForm.addEventListener('submit', function(e) {
+                    const submitButton = this.querySelector('button[type="submit"]');
+                    const originalText = submitButton.innerHTML;
+                    
+                    // Show loading state
+                    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+                    submitButton.disabled = true;
+                    
+                    // Re-enable button after 3 seconds if form doesn't submit
+                    setTimeout(function() {
+                        if (submitButton.disabled) {
+                            submitButton.innerHTML = originalText;
+                            submitButton.disabled = false;
+                        }
+                    }, 3000);
+                });
+            }
+
+            // Enhanced alert handling
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                // Add click to dismiss functionality
+                alert.addEventListener('click', function(e) {
+                    if (e.target.classList.contains('alert-close') || e.target.closest('.alert-close')) {
+                        this.style.opacity = '0';
+                        setTimeout(() => this.remove(), 300);
+                    }
+                });
+
+                // Add keyboard support for dismissal
+                alert.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') {
+                        this.style.opacity = '0';
+                        setTimeout(() => this.remove(), 300);
+                    }
+                });
+            });
+
+            // Scroll to top when showing success message
+            <?php if (isset($_SESSION['teacher_success']) || isset($_SESSION['attendance_saved'])): ?>
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            <?php endif; ?>
+        });
+
+        // Success popup functions
+        function showSuccessPopup(message, date, subject, recordCount) {
+            // Update the popup message
+            const popupMessage = document.getElementById('popupMessage');
+            const messageDiv = popupMessage.querySelector('.popup-details');
+            
+            if (messageDiv) {
+                // Update the storage info
+                const dateSpan = document.getElementById('attendanceDate');
+                const subjectSpan = document.getElementById('attendanceSubject');
+                
+                if (dateSpan) dateSpan.textContent = date || 'Today';
+                if (subjectSpan) subjectSpan.textContent = subject || 'All Subjects';
+                
+                // Update record count
+                const recordInfo = popupMessage.querySelector('.info-item span');
+                if (recordInfo) {
+                    recordInfo.textContent = `${recordCount} attendance records stored in database`;
+                }
+            }
+            
+            document.getElementById('successPopup').style.display = 'flex';
+        }
+
+        function closeSuccessPopup() {
+            document.getElementById('successPopup').style.display = 'none';
+        }
+
+        function takeMoreAttendance() {
+            closeSuccessPopup();
+            // Optionally redirect to a new date or class
+            window.location.href = 'attendance.php';
+        }
+
+        // Show popup if attendance was just saved
+        <?php if (isset($_SESSION['show_popup']) && $_SESSION['show_popup']): ?>
+            <?php if (isset($_SESSION['teacher_success'])): ?>
+                showSuccessPopup(
+                    '<?php echo addslashes($_SESSION['teacher_success']); ?>',
+                    '<?php echo isset($_GET['date']) ? $_GET['date'] : date('Y-m-d'); ?>',
+                    '<?php echo isset($_GET['subject']) ? addslashes($_GET['subject']) : 'All Subjects'; ?>',
+                    '<?php echo isset($_SESSION['processed_count']) ? $_SESSION['processed_count'] : '0'; ?>'
+                );
+                <?php 
+                unset($_SESSION['teacher_success'], $_SESSION['show_popup']); 
+                if (isset($_SESSION['processed_count'])) unset($_SESSION['processed_count']);
+                ?>
+            <?php endif; ?>
+        <?php endif; ?>
+
+        // Close popup when clicking outside
+        document.getElementById('successPopup').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeSuccessPopup();
+            }
+        });
+
+        // Close popup with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeSuccessPopup();
+            }
         });
     </script>
 </body>

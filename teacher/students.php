@@ -63,20 +63,49 @@ try {
     error_log("Error fetching assigned classes: " . $e->getMessage());
 }
 
+// Get assigned departments for filter dropdown
+$departments = [];
+try {
+    $stmt = $conn->prepare('SELECT dep_id, department_name FROM departments WHERE school_id = ? ORDER BY department_name ASC');
+    $stmt->bind_param('i', $school_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+        $departments[] = $row;
+    }
+    $stmt->close();
+} catch (Exception $e) {
+    error_log("Error fetching departments: " . $e->getMessage());
+}
+$department_filter = $_GET['department_id'] ?? '';
+
 // Get students with filtering
 $students = [];
 try {
     $where_conditions = ['s.school_id = ?'];
     $params = [$school_id];
     $types = 'i';
-    
-    // Add class filter
-    if (!empty($class_filter)) {
-        $where_conditions[] = 's.class_id = ?';
-        $params[] = $class_filter;
+    $teacher_class_ids = array_column($assigned_classes, 'id');
+    if (!empty($teacher_class_ids)) {
+        if (!empty($class_filter)) {
+            $where_conditions[] = 's.class_id = ?';
+            $params[] = $class_filter;
+            $types .= 'i';
+        } else {
+            $in_placeholders = implode(',', array_fill(0, count($teacher_class_ids), '?'));
+            $where_conditions[] = 's.class_id IN (' . $in_placeholders . ')';
+            $params = array_merge($params, $teacher_class_ids);
+            $types .= str_repeat('i', count($teacher_class_ids));
+        }
+    } else {
+        $where_conditions[] = '0';
+    }
+    // Add department filter
+    if (!empty($department_filter)) {
+        $where_conditions[] = 'c.department_id = ?';
+        $params[] = $department_filter;
         $types .= 'i';
     }
-    
     // Add search filter
     if (!empty($search_term)) {
         $where_conditions[] = '(s.first_name LIKE ? OR s.last_name LIKE ? OR s.admission_number LIKE ?)';
@@ -86,12 +115,6 @@ try {
         $params[] = $search_param;
         $types .= 'sss';
     }
-    
-    // Only show students from classes assigned to this teacher
-    $where_conditions[] = 'c.teacher_id = ?';
-    $params[] = $teacher_id;
-    $types .= 'i';
-    
     $sql = "SELECT s.*, c.class_name, c.grade_level, d.department_name,
                    CONCAT(s.first_name, ' ', s.last_name) as full_name
             FROM students s 
@@ -99,12 +122,10 @@ try {
             LEFT JOIN departments d ON c.department_id = d.dep_id
             WHERE " . implode(' AND ', $where_conditions) . "
             ORDER BY c.grade_level ASC, c.class_name ASC, s.first_name ASC, s.last_name ASC";
-    
     $stmt = $conn->prepare($sql);
     $stmt->bind_param($types, ...$params);
     $stmt->execute();
     $result = $stmt->get_result();
-    
     while ($row = $result->fetch_assoc()) {
         $students[] = $row;
     }
@@ -419,7 +440,7 @@ $conn->close();
 
         .filter-form {
             display: grid;
-            grid-template-columns: 1fr 1fr auto;
+            grid-template-columns: 1fr 1fr 1fr auto;
             gap: 1rem;
             align-items: end;
         }
@@ -701,6 +722,18 @@ $conn->close();
                 </div>
                 
                 <div class="form-group">
+                    <label for="department_filter">Filter by Department</label>
+                    <select name="department_id" id="department_filter" class="form-control">
+                        <option value="">All Departments</option>
+                        <?php foreach ($departments as $dept): ?>
+                            <option value="<?php echo $dept['dep_id']; ?>" <?php echo $department_filter == $dept['dep_id'] ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($dept['department_name']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                
+                <div class="form-group">
                     <label for="search">Search Students</label>
                     <input type="text" name="search" id="search" class="form-control" 
                            placeholder="Search by name or admission number..." 
@@ -798,7 +831,7 @@ $conn->close();
                         <div class="empty-icon"><i class="fas fa-user-graduate"></i></div>
                         <div class="empty-text">No Students Found</div>
                         <p>
-                            <?php if (!empty($search_term) || !empty($class_filter)): ?>
+                            <?php if (!empty($search_term) || !empty($class_filter) || !empty($department_filter)): ?>
                                 No students match your current search criteria. Try adjusting your filters.
                             <?php else: ?>
                                 No students are currently assigned to your classes. Please contact your school administrator.
@@ -826,6 +859,11 @@ $conn->close();
 
             // Auto-submit form when class filter changes
             document.getElementById('class_filter').addEventListener('change', function() {
+                this.form.submit();
+            });
+
+            // Auto-submit form when department filter changes
+            document.getElementById('department_filter').addEventListener('change', function() {
                 this.form.submit();
             });
         });

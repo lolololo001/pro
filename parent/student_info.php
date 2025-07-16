@@ -196,7 +196,6 @@ $conn->close();
             </div>
             <div class="tabs">
                 <button class="tab-btn active" data-tab="permissions"><span class="tab-icon"><i class="fas fa-clipboard-list"></i></span>View Permissions</button>
-                <button class="tab-btn" data-tab="payment"><span class="tab-icon"><i class="fas fa-money-bill-wave"></i></span>View Payment</button>
                 <button class="tab-btn" data-tab="marks"><span class="tab-icon"><i class="fas fa-chart-line"></i></span>View Marks</button>
                 <button class="tab-btn" data-tab="attendance"><span class="tab-icon"><i class="fas fa-calendar-check"></i></span>View Attendance</button>
             </div>
@@ -240,22 +239,32 @@ $conn->close();
                     echo '<tbody>';
                     
                     while ($permission = $permissionResult->fetch_assoc()) {
-                        $status = strtolower(trim($permission['status']));
+                        $original_status = $permission['status'];
+                        $status = strtolower(trim($original_status ?? ''));
                         $statusClass = 'status-badge status-unknown';
                         $statusIcon = '<i class="fas fa-question-circle"></i> ';
-                        $displayStatus = 'Unknown';
+                        $displayStatus = 'Unknown (' . htmlspecialchars($original_status ?? 'NULL') . ')';
+                        
+                        // Debug: Log the status processing
+                        error_log("Processing permission status: Original='{$original_status}' | Processed='{$status}' | Empty=" . (empty($status) ? 'true' : 'false'));
+                        
+                        // More robust status checking
                         if ($status === 'pending') {
                             $statusClass = 'status-badge status-pending';
                             $statusIcon = '<i class="fas fa-clock"></i> ';
                             $displayStatus = 'Pending';
-                        } elseif ($status === 'approved') {
+                        } elseif (in_array($status, ['approved', 'approve', 'accepted', 'accept'])) {
                             $statusClass = 'status-badge status-approved';
                             $statusIcon = '<i class="fas fa-check-circle"></i> ';
                             $displayStatus = 'Approved';
-                        } elseif ($status === 'rejected') {
+                        } elseif (in_array($status, ['rejected', 'reject', 'denied', 'deny'])) {
                             $statusClass = 'status-badge status-rejected';
                             $statusIcon = '<i class="fas fa-times-circle"></i> ';
                             $displayStatus = 'Rejected';
+                        } elseif (empty($status) || $status === 'null') {
+                            $statusClass = 'status-badge status-pending';
+                            $statusIcon = '<i class="fas fa-clock"></i> ';
+                            $displayStatus = 'Pending (No Status)';
                         }
                         echo '<tr style="border-bottom: 1px solid #dee2e6; transition: background-color 0.2s;">';
                         echo '<td style="padding: 12px; color: #6c757d;">' . date('M d, Y', strtotime($permission['created_at'])) . '</td>';
@@ -306,17 +315,217 @@ $conn->close();
                 $conn->close();
                 ?>
             </div>
-            <div class="tab-content" id="tab-payment">
-                <h3>Payment</h3>
-                <p>Here you can view all payment records for this student.</p>
-            </div>
             <div class="tab-content" id="tab-marks">
-                <h3>Marks</h3>
-                <p>Here you can view all marks and academic results for this student.</p>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h3>Academic Marks for <?php echo htmlspecialchars($student['first_name'] . ' ' . $student['last_name']); ?></h3>
+                </div>
+                <?php
+                // Fetch marks for this specific student
+                $conn = getDbConnection();
+                $marksQuery = "SELECT sm.*, t.name as teacher_name
+                              FROM student_marks sm
+                              LEFT JOIN teachers t ON sm.teacher_id = t.id
+                              WHERE sm.student_id = ?
+                              ORDER BY sm.term ASC, sm.subject ASC";
+                
+                $marksStmt = $conn->prepare($marksQuery);
+                $marksStmt->bind_param('i', $student_id);
+                $marksStmt->execute();
+                $marksResult = $marksStmt->get_result();
+                
+                if ($marksResult->num_rows > 0) {
+                    echo '<div class="table-responsive">';
+                    echo '<table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">';
+                    echo '<thead>';
+                    echo '<tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">';
+                    echo '<th style="padding: 12px; text-align: left; font-weight: 600; color: #495057;">Subject</th>';
+                    echo '<th style="padding: 12px; text-align: left; font-weight: 600; color: #495057;">Term</th>';
+                    echo '<th style="padding: 12px; text-align: left; font-weight: 600; color: #495057;">Marks</th>';
+                    echo '<th style="padding: 12px; text-align: left; font-weight: 600; color: #495057;">Percentage</th>';
+                    echo '<th style="padding: 12px; text-align: left; font-weight: 600; color: #495057;">Grade</th>';
+                    echo '<th style="padding: 12px; text-align: left; font-weight: 600; color: #495057;">Teacher</th>';
+                    echo '<th style="padding: 12px; text-align: left; font-weight: 600; color: #495057;">Comments</th>';
+                    echo '</tr>';
+                    echo '</thead>';
+                    echo '<tbody>';
+                    
+                    while ($mark = $marksResult->fetch_assoc()) {
+                        $percentage = ($mark['marks'] / $mark['max_marks']) * 100;
+                        $grade = '';
+                        $gradeClass = '';
+                        
+                        if ($percentage >= 90) {
+                            $grade = 'A+';
+                            $gradeClass = 'status-approved';
+                        } elseif ($percentage >= 80) {
+                            $grade = 'A';
+                            $gradeClass = 'status-approved';
+                        } elseif ($percentage >= 70) {
+                            $grade = 'B';
+                            $gradeClass = 'status-approved';
+                        } elseif ($percentage >= 60) {
+                            $grade = 'C';
+                            $gradeClass = 'status-pending';
+                        } elseif ($percentage >= 50) {
+                            $grade = 'D';
+                            $gradeClass = 'status-pending';
+                        } else {
+                            $grade = 'F';
+                            $gradeClass = 'status-rejected';
+                        }
+                        
+                        echo '<tr style="border-bottom: 1px solid #dee2e6; transition: background-color 0.2s;">';
+                        echo '<td style="padding: 12px; color: #495057; font-weight: 500;">' . htmlspecialchars($mark['subject']) . '</td>';
+                        echo '<td style="padding: 12px; color: #6c757d;">' . htmlspecialchars($mark['term']) . '</td>';
+                        echo '<td style="padding: 12px; color: #495057; font-weight: 500;">';
+                        echo '<strong>' . $mark['marks'] . '</strong> / ' . $mark['max_marks'];
+                        echo '</td>';
+                        echo '<td style="padding: 12px;">';
+                        echo '<span class="status-badge ' . $gradeClass . '">';
+                        echo number_format($percentage, 1) . '%';
+                        echo '</span>';
+                        echo '</td>';
+                        echo '<td style="padding: 12px;">';
+                        echo '<span class="status-badge ' . $gradeClass . '">';
+                        echo $grade;
+                        echo '</span>';
+                        echo '</td>';
+                        echo '<td style="padding: 12px; color: #6c757d;">' . htmlspecialchars($mark['teacher_name'] ?? 'N/A') . '</td>';
+                        echo '<td style="padding: 12px; color: #6c757d;">';
+                        if ($mark['comments']) {
+                            echo '<div style="max-width: 200px; word-wrap: break-word;">';
+                            echo htmlspecialchars(substr($mark['comments'], 0, 100));
+                            if (strlen($mark['comments']) > 100) {
+                                echo '... <button onclick="showFullComment(\'' . htmlspecialchars($mark['comments'], ENT_QUOTES) . '\')" style="background: none; border: none; color: #00704A; cursor: pointer; font-size: 0.8rem;">Read more</button>';
+                            }
+                            echo '</div>';
+                        } else {
+                            echo '<span style="color: #adb5bd; font-style: italic;">No comments</span>';
+                        }
+                        echo '</td>';
+                        echo '</tr>';
+                    }
+                    
+                    echo '</tbody>';
+                    echo '</table>';
+                    echo '</div>';
+                } else {
+                    echo '<div style="text-align: center; padding: 3rem; color: #6c757d;">';
+                    echo '<i class="fas fa-chart-line" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>';
+                    echo '<h4 style="margin-bottom: 0.5rem; color: #495057;">No Marks Available</h4>';
+                    echo '<p>No academic marks have been recorded for this student yet.</p>';
+                    echo '</div>';
+                }
+                
+                $marksStmt->close();
+                $conn->close();
+                ?>
             </div>
             <div class="tab-content" id="tab-attendance">
-                <h3>Attendance</h3>
-                <p>Here you can view attendance records for this student.</p>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h3>Attendance Records for <?php echo htmlspecialchars($student['first_name'] . ' ' . $student['last_name']); ?></h3>
+
+                    <!-- Subject Selection -->
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <label for="subject_select" style="font-weight: 500; color: #495057;">Subject:</label>
+                        <select id="subject_select" onchange="filterBySubject()" style="padding: 0.5rem; border: 1px solid #ced4da; border-radius: 4px; font-size: 0.9rem;">
+                            <option value="">All Subjects</option>
+                            <?php
+                            // Get unique subjects for this student
+                            $conn_temp = getDbConnection();
+                            $subjectQuery = "SELECT DISTINCT subject FROM student_attendance WHERE student_id = ? AND subject IS NOT NULL AND subject != '' ORDER BY subject";
+                            $subjectStmt = $conn_temp->prepare($subjectQuery);
+                            $subjectStmt->bind_param('i', $student_id);
+                            $subjectStmt->execute();
+                            $subjectResult = $subjectStmt->get_result();
+
+                            while ($subjectRow = $subjectResult->fetch_assoc()) {
+                                $subject = $subjectRow['subject'];
+                                echo '<option value="' . htmlspecialchars($subject) . '">' . htmlspecialchars($subject) . '</option>';
+                            }
+                            $subjectStmt->close();
+                            $conn_temp->close();
+                            ?>
+                        </select>
+                    </div>
+                </div>
+
+
+
+                <?php
+                // Fetch attendance for this specific student
+                $conn = getDbConnection();
+                $attendanceQuery = "SELECT sa.*, t.name as teacher_name
+                                   FROM student_attendance sa
+                                   LEFT JOIN teachers t ON sa.teacher_id = t.id
+                                   WHERE sa.student_id = ?
+                                   ORDER BY sa.date DESC
+                                   LIMIT 50";
+
+                $attendanceStmt = $conn->prepare($attendanceQuery);
+                $attendanceStmt->bind_param('i', $student_id);
+                $attendanceStmt->execute();
+                $attendanceResult = $attendanceStmt->get_result();
+                
+                if ($attendanceResult->num_rows > 0) {
+                    echo '<div class="table-responsive">';
+                    echo '<table id="attendance-table" style="width: 100%; border-collapse: collapse; margin-top: 1rem;">';
+                    echo '<thead>';
+                    echo '<tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">';
+                    echo '<th style="padding: 12px; text-align: left; font-weight: 600; color: #495057;">Date</th>';
+                    echo '<th style="padding: 12px; text-align: left; font-weight: 600; color: #495057;">Status</th>';
+                    echo '<th style="padding: 12px; text-align: left; font-weight: 600; color: #495057;">Subject</th>';
+                    echo '<th style="padding: 12px; text-align: left; font-weight: 600; color: #495057;">Teacher</th>';
+                    echo '</tr>';
+                    echo '</thead>';
+                    echo '<tbody>';
+                    
+                    while ($attendance = $attendanceResult->fetch_assoc()) {
+                        $status = strtolower(trim($attendance['status']));
+                        $statusClass = 'status-badge status-unknown';
+                        $statusIcon = '<i class="fas fa-question-circle"></i> ';
+                        $displayStatus = 'Unknown';
+                        
+                        if ($status === 'present') {
+                            $statusClass = 'status-badge status-approved';
+                            $statusIcon = '<i class="fas fa-check-circle"></i> ';
+                            $displayStatus = 'Present';
+                        } elseif ($status === 'absent') {
+                            $statusClass = 'status-badge status-rejected';
+                            $statusIcon = '<i class="fas fa-times-circle"></i> ';
+                            $displayStatus = 'Absent';
+                        } elseif ($status === 'late') {
+                            $statusClass = 'status-badge status-pending';
+                            $statusIcon = '<i class="fas fa-clock"></i> ';
+                            $displayStatus = 'Late';
+                        }
+                        
+                        echo '<tr style="border-bottom: 1px solid #dee2e6; transition: background-color 0.2s;">';
+                        echo '<td style="padding: 12px; color: #6c757d;">' . date('M d, Y', strtotime($attendance['date'])) . '</td>';
+                        echo '<td style="padding: 12px;">';
+                        echo '<span class="' . $statusClass . '">';
+                        echo $statusIcon . $displayStatus;
+                        echo '</span>';
+                        echo '</td>';
+                        echo '<td style="padding: 12px; color: #495057;">' . htmlspecialchars($attendance['subject'] ?? 'N/A') . '</td>';
+                        echo '<td style="padding: 12px; color: #6c757d;">' . htmlspecialchars($attendance['teacher_name'] ?? 'N/A') . '</td>';
+                        echo '</tr>';
+                    }
+                    
+                    echo '</tbody>';
+                    echo '</table>';
+                    echo '</div>';
+                } else {
+                    echo '<div style="text-align: center; padding: 3rem; color: #6c757d;">';
+                    echo '<i class="fas fa-calendar-check" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>';
+                    echo '<h4 style="margin-bottom: 0.5rem; color: #495057;">No Attendance Records</h4>';
+                    echo '<p>No attendance records have been found for this student yet.</p>';
+                    echo '</div>';
+                }
+                
+                $attendanceStmt->close();
+                $conn->close();
+                ?>
             </div>
         </div>
     </div>
@@ -347,8 +556,42 @@ $conn->close();
             document.getElementById('responseModal').style.display = 'block';
         }
         
+        function showFullComment(comment) {
+            document.getElementById('modalContent').innerHTML = comment.replace(/\n/g, '<br>');
+            document.getElementById('responseModal').style.display = 'block';
+        }
+        
+        function showFullNote(note) {
+            document.getElementById('modalContent').innerHTML = note.replace(/\n/g, '<br>');
+            document.getElementById('responseModal').style.display = 'block';
+        }
+
         function closeModal() {
             document.getElementById('responseModal').style.display = 'none';
+        }
+
+        // Subject filtering function
+        function filterBySubject() {
+            const selectedSubject = document.getElementById('subject_select').value;
+            const attendanceRows = document.querySelectorAll('#attendance-table tbody tr');
+
+            attendanceRows.forEach(row => {
+                const subjectCell = row.cells[2]; // Subject is the 3rd column (index 2)
+                const subjectText = subjectCell.textContent.trim();
+
+                if (selectedSubject === '' || subjectText === selectedSubject || subjectText === 'N/A') {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Update visible count
+            const visibleRows = document.querySelectorAll('#attendance-table tbody tr[style=""], #attendance-table tbody tr:not([style])');
+            const totalRows = attendanceRows.length;
+
+            // You can add a counter display here if needed
+            console.log(`Showing ${visibleRows.length} of ${totalRows} attendance records`);
         }
         
         // Close modal when clicking outside of it
