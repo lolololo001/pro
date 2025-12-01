@@ -1,192 +1,115 @@
-import sys
-import pickle
-import os
-import json
+import pandas as pd
 import numpy as np
-from sklearn.feature_extraction.text import TfidfVectorizer
-import re
-from sklearn.metrics.pairwise import cosine_similarity
+import string
+import pickle
+import json
+import sys
 
-def clean_text(text):
-    text = str(text).lower()
-    text = re.sub(r'[^a-z\s]', '', text)
-    text = re.sub(r'\s+', ' ', text).strip()
-    return text
+# Simple stopwords list (no NLTK download required)
+STOPWORDS = {
+    'i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', "you're", "you've", "you'll", "you'd", 
+    'your', 'yours', 'yourself', 'yourselves', 'he', 'him', 'his', 'himself', 'she', "she's", 'her', 'hers', 
+    'herself', 'it', "it's", 'its', 'itself', 'they', 'them', 'their', 'theirs', 'themselves', 'what', 'which', 
+    'who', 'whom', 'this', 'that', "that'll", 'these', 'those', 'am', 'is', 'are', 'was', 'were', 'be', 'been', 
+    'being', 'have', 'has', 'had', 'having', 'do', 'does', 'did', 'doing', 'a', 'an', 'the', 'and', 'but', 'if', 
+    'or', 'because', 'as', 'until', 'while', 'of', 'at', 'by', 'for', 'with', 'against', 'between', 'into', 
+    'through', 'during', 'before', 'after', 'above', 'below', 'to', 'from', 'up', 'down', 'in', 'out', 'on', 'off', 
+    'over', 'under', 'again', 'further', 'then', 'once', 'here', 'there', 'when', 'where', 'why', 'how', 'all', 
+    'any', 'both', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 
+    'same', 'so', 'than', 'too', 'very', 's', 't', 'can', 'will', 'just', 'don', "don't", 'should', "should've", 
+    'now', 'd', 'll', 'm', 'o', 're', 've', 'y', 'ain', 'aren', "aren't", 'couldn', "couldn't", 'didn', "didn't", 
+    'doesn', "doesn't", 'hadn', "hadn't", 'hasn', "hasn't", 'haven', "haven't", 'isn', "isn't", 'ma', 'mightn', 
+    "mightn't", 'mustn', "mustn't", 'needn', "needn't", 'shan', "shan't", 'shouldn', "shouldn't", 'wasn', "wasn't", 
+    'weren', "weren't", 'won', "won't", 'wouldn', "wouldn't"
+}
 
-def load_model_and_vectorizer():
-    model_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'rf_model.pkl')
-    vectorizer_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'vectorizer.pkl')
-    
-    # Load the model and suggestion map
-    with open(model_path, 'rb') as f:
-        model, suggestion_map = pickle.load(f)
-    
-    # Load the vectorizer
-    with open(vectorizer_path, 'rb') as f:
-        vectorizer = pickle.load(f)
-    
-    return model, vectorizer, suggestion_map
+def preprocess_text(text):
+    """Simple text preprocessing without NLTK dependencies"""
+    text = str(text).lower()  # Lowercase
+    text = text.translate(str.maketrans('', '', string.punctuation))  # Remove punctuation
+    tokens = [word for word in text.split() if word not in STOPWORDS and len(word) > 2]  # Remove stopwords and short words
+    return ' '.join(tokens)
 
-def get_feedback_category(text, category_keywords, vectorizer):
-    # Clean and transform the text
-    cleaned_text = clean_text(text)
-    text_vector = vectorizer.transform([cleaned_text])
-    
-    # Calculate weighted scores for each category
-    category_scores = {}
-    for category, keywords in category_keywords.items():
-        # Clean and join keywords
-        category_text = ' '.join(keywords)
-        category_vector = vectorizer.transform([category_text])
-        
-        # Calculate cosine similarity
-        similarity = cosine_similarity(text_vector, category_vector)[0][0]
-        category_scores[category] = float(similarity)
-    
-    # Return category with highest similarity
-    return max(category_scores.items(), key=lambda x: x[1])[0]
-
-def get_best_suggestion(feedback_text, suggestions, sentiment_label):
-    # Clean the feedback text
-    cleaned_feedback = clean_text(feedback_text)
-    feedback_terms = cleaned_feedback.split()
-
-    # Score suggestions based on relevance to feedback
-    suggestion_scores = []
-    for suggestion in suggestions:
-        suggestion_terms = clean_text(suggestion).split()
-
-        # Count matching terms
-        matching_terms = len(set(feedback_terms) & set(suggestion_terms))
-
-        # Context-specific scoring for food/cafeteria issues
-        context_score = 0
-        food_keywords = ['food', 'cafeteria', 'lunch', 'meal', 'eat', 'nutrition', 'menu', 'kitchen', 'dining']
-        if any(word in feedback_terms for word in food_keywords):
-            if 'cafeteria' in suggestion_terms or 'food' in suggestion_terms or 'menu' in suggestion_terms:
-                context_score += 5
-
-        # Quality/condition keywords
-        quality_keywords = ['dirty', 'bad', 'poor', 'terrible', 'awful', 'disgusting', 'unacceptable']
-        if any(word in feedback_terms for word in quality_keywords):
-            if 'improve' in suggestion_terms or 'quality' in suggestion_terms or 'standards' in suggestion_terms:
-                context_score += 3
-
-        # Check for sentiment-appropriate words
-        sentiment_score = 0
-        if sentiment_label == 'negative':
-            action_words = ['implement', 'improve', 'create', 'develop', 'establish', 'provide', 'enhance', 'update', 'fix', 'address', 'resolve']
-            sentiment_score = sum(1 for word in suggestion_terms if word in action_words)
-        elif sentiment_label == 'positive':
-            support_words = ['continue', 'maintain', 'support', 'expand', 'recognize', 'celebrate', 'strengthen', 'keep']
-            sentiment_score = sum(1 for word in suggestion_terms if word in support_words)
-
-        # Calculate final score with weighted components
-        score = (matching_terms * 2) + (context_score * 3) + (sentiment_score * 2)
-        suggestion_scores.append((suggestion, score))
-
-    # Return the suggestion with highest score, or a contextual fallback
-    if suggestion_scores:
-        best_suggestion = max(suggestion_scores, key=lambda x: x[1])[0]
-
-        # If no good match found and it's food-related, provide specific food suggestion
-        if max(suggestion_scores, key=lambda x: x[1])[1] == 0:
-            food_keywords = ['food', 'cafeteria', 'lunch', 'meal', 'eat', 'nutrition', 'menu', 'kitchen', 'dining']
-            if any(word in feedback_terms for word in food_keywords):
-                return "We will review and improve our cafeteria menu and food quality standards to better meet student needs."
-
-        return best_suggestion
+def generate_suggestion(sentiment_label, feedback_text):
+    """Generate appropriate suggestion based on sentiment"""
+    if sentiment_label == 'Positive':
+        return "Thank you for your positive feedback. We're glad to hear about your positive experience and will continue to maintain these high standards."
     else:
-        return f"Thank you for your {sentiment_label} feedback. We will review and take appropriate action."
+        return "We're sorry to hear about your concerns. We're committed to addressing these issues and will work on improving our services. Thank you for bringing this to our attention."
 
-def analyze_sentiment(feedback_text):
+def analyze_sentiment(text):
+    """Analyze sentiment of the given text"""
     try:
-        # Load model and vectorizer
-        model, vectorizer, suggestion_map = load_model_and_vectorizer()
+        # Load the trained model
+        with open('sentiment_model.pkl', 'rb') as f:
+            model_data = pickle.load(f)
         
-        # Clean and transform the input text
-        cleaned_text = clean_text(feedback_text)
-        text_vectorized = vectorizer.transform([cleaned_text])
+        model = model_data['model']
+        vectorizer = model_data['vectorizer']
+        label_encoder = model_data['label_encoder']
         
-        # Get prediction probabilities
-        probabilities = model.predict_proba(text_vectorized)[0]
-        confidence_score = max(probabilities)
-        prediction = model.predict(text_vectorized)[0]
+        # Preprocess the input text
+        clean_text = preprocess_text(text)
         
-        # Map sentiment with adjusted thresholds
-        if confidence_score < 0.55:  # Lower threshold for more decisive predictions
-            sentiment_label = 'neutral'
+        # Vectorize the text
+        features = vectorizer.transform([clean_text])
+        
+        # Make prediction
+        prediction = model.predict(features)[0]
+        probabilities = model.predict_proba(features)[0]
+        
+        # Get sentiment label and confidence
+        sentiment_label = label_encoder.inverse_transform([prediction])[0]
+        confidence = max(probabilities)
+        
+        # Calculate sentiment score (0-1 scale)
+        if sentiment_label == 'Positive':
+            sentiment_score = confidence
         else:
-            sentiment_label = 'positive' if prediction == 1 else 'negative'
+            sentiment_score = 1 - confidence
         
-        # Enhanced category keywords with more specific terms and better food/cafeteria coverage
-        category_keywords = {
-            'academics': ['learning', 'curriculum', 'teacher', 'study', 'grade', 'academic', 'class', 'subject',
-                        'homework', 'assignment', 'test', 'exam', 'education', 'lesson', 'teaching', 'course',
-                        'student', 'progress', 'achievement', 'improvement', 'skills', 'math', 'reading',
-                        'science', 'performance', 'understanding', 'tutoring', 'instruction'],
-            'administration': ['principal', 'staff', 'policy', 'management', 'administrative', 'office',
-                              'administration', 'schedule', 'planning', 'organization', 'leadership', 'decision',
-                              'coordinator', 'supervisor', 'administrator', 'enrollment', 'budget', 'hiring',
-                              'procedures', 'registration'],
-            'communication': ['contact', 'inform', 'notification', 'message', 'update', 'email', 'phone',
-                             'communicate', 'newsletter', 'announcement', 'notice', 'feedback', 'response',
-                             'information', 'communication', 'website', 'portal', 'updates', 'informed'],
-            'extracurricular': ['activity', 'club', 'sport', 'program', 'event', 'team', 'practice',
-                                'competition', 'game', 'tournament', 'performance', 'play', 'music',
-                                'art', 'drama', 'dance', 'enrichment', 'robotics', 'field trip', 'trips'],
-            'facilities': ['building', 'classroom', 'equipment', 'maintenance', 'facility', 'infrastructure',
-                          'playground', 'library', 'cafeteria', 'gym', 'laboratory', 'resource', 'bathroom',
-                          'field', 'court', 'parking', 'condition', 'repair', 'safety', 'food', 'lunch',
-                          'meal', 'dining', 'kitchen', 'menu', 'eat', 'eating', 'nutrition', 'healthy',
-                          'dirty', 'clean', 'hvac', 'air conditioning', 'water fountain', 'overcrowded'],
-            'behavior': ['discipline', 'conduct', 'behavior', 'attitude', 'bullying', 'respect',
-                         'responsibility', 'rule', 'safety', 'supervision', 'interaction', 'manner',
-                         'character', 'value', 'ethic', 'environment', 'climate', 'recess', 'conflict',
-                         'aggressive', 'unsafe', 'mediation']
-        }
+        # Generate suggestion
+        suggestion = generate_suggestion(sentiment_label, text)
         
-        # Get feedback category
-        category = get_feedback_category(cleaned_text, category_keywords, vectorizer)
-        
-        # Get relevant suggestions based on sentiment and category
-        if category in suggestion_map and suggestion_map[category]:
-            suggestions = suggestion_map[category]
-            suggestion = get_best_suggestion(feedback_text, suggestions, sentiment_label)
-        else:
-            suggestion = f"Thank you for your {sentiment_label} feedback about {category}. We will review and take appropriate action."
-        
-        # Prepare the response
+        # Return results
         result = {
-            'sentiment_score': float(confidence_score),
             'sentiment_label': sentiment_label,
-            'category': category,
-            'suggestion': suggestion
+            'sentiment_score': round(sentiment_score, 3),
+            'confidence': round(confidence, 3),
+            'suggestion': suggestion,
+            'success': True
         }
         
-        print(json.dumps(result))
-        return 0
+        return result
         
     except Exception as e:
-        print(json.dumps({
-            'error': str(e),
+        # Fallback response if model fails
+        return {
+            'sentiment_label': 'Neutral',
             'sentiment_score': 0.5,
-            'sentiment_label': 'neutral',
-            'category': 'general',
-            'suggestion': 'Thank you for your feedback. We will review and address your concerns.'
-        }))
-        return 1
+            'confidence': 0.5,
+            'suggestion': 'Thank you for your feedback. We will review and address your concerns.',
+            'success': False,
+            'error': str(e)
+        }
 
-if __name__ == '__main__':
+def main():
+    """Main function to handle command line input"""
     if len(sys.argv) < 2:
         print(json.dumps({
-            'error': 'No feedback text provided',
-            'sentiment_score': 0.5,
-            'sentiment_label': 'neutral',
-            'category': 'general',
-            'suggestion': 'Please provide your feedback text.'
+            'error': 'No text provided',
+            'success': False
         }))
-        sys.exit(1)
+        return
     
-    feedback_text = sys.argv[1]
-    sys.exit(analyze_sentiment(feedback_text))
+    # Get text from command line argument
+    text = sys.argv[1]
+    
+    # Analyze sentiment
+    result = analyze_sentiment(text)
+    
+    # Output JSON result
+    print(json.dumps(result))
+
+if __name__ == "__main__":
+    main() 

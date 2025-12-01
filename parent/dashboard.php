@@ -2543,17 +2543,8 @@ try {
                     </form>
                 </div>
 
-                <!-- Sentiment Analysis Result Modal -->
-                <div id="sentimentModal" class="modal" style="display:none;">
-                    <div class="modal-content" style="max-width: 500px; border-radius: 16px; padding: 2rem; text-align: center;">
-                        <span class="close" onclick="closeSentimentModal()" style="float:right; font-size:1.5rem; cursor:pointer;">&times;</span>
-                        <div id="sentimentResultIcon" style="font-size:2.5rem; margin-bottom:1rem;"></div>
-                        <h3 id="sentimentResultLabel"></h3>
-                        <p id="sentimentResultScore" style="font-weight:500;"></p>
-                        <div id="sentimentSuggestion" style="margin-top:1.5rem; color:#00704A; font-weight:500;"></div>
-                        <button class="btn btn-primary" onclick="closeSentimentModal()" style="margin-top:2rem;">OK</button>
-                    </div>
-                </div>
+                <!-- Include the Enhanced Sentiment Modal -->
+                <?php include 'sentiment_modal.php'; ?>
             </div>
         </div>
     </div>
@@ -2901,6 +2892,7 @@ try {
         });
     </script>
     <script src="../includes/js/feedback-ajax.js"></script>
+    <script src="feedback-handler.js"></script>
     <script>
         // Function to close sentiment modal
         function closeSentimentModal() {

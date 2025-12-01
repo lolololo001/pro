@@ -32795,3 +32795,1214 @@ ValueError: X has 173 features, but RandomForestClassifier is expecting 815 feat
 [16-Jul-2025 20:21:36 UTC] Python command: python "C:\xampp\htdocs\pro\python\sentiment_analysis.py" "foods are dirty" 2>&1
 [16-Jul-2025 20:21:36 UTC] Python output: {"sentiment_score": 0.6496840105925671, "sentiment_label": "negative", "category": "facilities", "suggestion": "Improve cafeteria menu and food quality standards"}
 
+[16-Jul-2025 21:30:50 UTC] Python command: python "C:\xampp\htdocs\pro\python\sentiment_analysis.py" "food is dirty" 2>&1
+[16-Jul-2025 21:30:50 UTC] Python output: {"sentiment_label": "Neutral", "sentiment_score": 0.5, "confidence": 0.5, "suggestion": "Thank you for your feedback. We will review and address your concerns.", "success": false, "error": "[Errno 2] No such file or directory: 'sentiment_model.pkl'"}
+
+[16-Jul-2025 21:30:58 UTC] Python command: python "C:\xampp\htdocs\pro\python\sentiment_analysis.py" "food is dirty" 2>&1
+[16-Jul-2025 21:30:58 UTC] Python output: {"sentiment_label": "Neutral", "sentiment_score": 0.5, "confidence": 0.5, "suggestion": "Thank you for your feedback. We will review and address your concerns.", "success": false, "error": "[Errno 2] No such file or directory: 'sentiment_model.pkl'"}
+
+[16-Jul-2025 21:40:19 UTC] Attempting to send feedback confirmation email to: uwalaurene250@gmail.com
+[16-Jul-2025 21:40:19 UTC] Attempting to send email to: uwalaurene250@gmail.com
+[16-Jul-2025 21:40:19 UTC] PHPMailer debug (3): Connection: opening to ssl://smtp.gmail.com:465, timeout=300, options=array (
+  'ssl' => 
+  array (
+    'verify_peer' => false,
+    'verify_peer_name' => false,
+    'allow_self_signed' => true,
+  ),
+)
+[16-Jul-2025 21:40:25 UTC] PHP Fatal error:  Maximum execution time of 120 seconds exceeded in C:\xampp\htdocs\pro\vendor\phpmailer\phpmailer\src\SMTP.php on line 421
+[16-Jul-2025 21:40:25 UTC] PHP Fatal error:  Maximum execution time of 120 seconds exceeded in C:\xampp\htdocs\pro\parent\submit_feedback.php on line 9
+[16-Jul-2025 21:40:25 UTC] PHP Fatal error:  Maximum execution time of 120 seconds exceeded in C:\xampp\htdocs\pro\parent\submit_feedback.php on line 9
+[16-Jul-2025 21:41:43 UTC] Python command: python "C:\xampp\htdocs\pro\python\sentiment_analysis.py" "food is dirty" 2>&1
+[16-Jul-2025 21:41:43 UTC] Python output: {"sentiment_label": "Neutral", "sentiment_score": 0.5, "confidence": 0.5, "suggestion": "Thank you for your feedback. We will review and address your concerns.", "success": false, "error": "[Errno 2] No such file or directory: 'sentiment_model.pkl'"}
+
+[16-Jul-2025 21:41:46 UTC] Attempting to send feedback confirmation email to: uwalaurene250@gmail.com
+[16-Jul-2025 21:41:46 UTC] Attempting to send email to: uwalaurene250@gmail.com
+[16-Jul-2025 21:41:46 UTC] PHPMailer debug (3): Connection: opening to ssl://smtp.gmail.com:465, timeout=300, options=array (
+  'ssl' => 
+  array (
+    'verify_peer' => false,
+    'verify_peer_name' => false,
+    'allow_self_signed' => true,
+  ),
+)
+[16-Jul-2025 21:41:46 UTC] PHPMailer debug (3): Connection: opened
+[16-Jul-2025 21:41:48 UTC] PHPMailer debug (2): SERVER -> CLIENT: 220 smtp.gmail.com ESMTP ffacd0b85a97d-3b612db7060sm1183398f8f.52 - gsmtp
+
+[16-Jul-2025 21:41:48 UTC] PHPMailer debug (1): CLIENT -> SERVER: EHLO localhost
+
+[16-Jul-2025 21:41:48 UTC] PHPMailer debug (2): SERVER -> CLIENT: 250-smtp.gmail.com at your service, [41.186.194.52]
+250-SIZE 36700160
+250-8BITMIME
+250-AUTH LOGIN PLAIN XOAUTH2 PLAIN-CLIENTTOKEN OAUTHBEARER XOAUTH
+250-ENHANCEDSTATUSCODES
+250-PIPELINING
+250-CHUNKING
+250 SMTPUTF8
+
+[16-Jul-2025 21:41:48 UTC] PHPMailer debug (1): CLIENT -> SERVER: AUTH LOGIN
+
+[16-Jul-2025 21:41:48 UTC] PHPMailer debug (2): SERVER -> CLIENT: 334 VXNlcm5hbWU6
+
+[16-Jul-2025 21:41:48 UTC] PHPMailer debug (1): CLIENT -> SERVER: [credentials hidden]
+[16-Jul-2025 21:41:48 UTC] PHPMailer debug (2): SERVER -> CLIENT: 334 UGFzc3dvcmQ6
+
+[16-Jul-2025 21:41:48 UTC] PHPMailer debug (1): CLIENT -> SERVER: [credentials hidden]
+[16-Jul-2025 21:41:49 UTC] PHPMailer debug (2): SERVER -> CLIENT: 235 2.7.0 Accepted
+
+[16-Jul-2025 21:41:49 UTC] PHPMailer debug (1): CLIENT -> SERVER: MAIL FROM:<schoolcomm001@gmail.com>
+
+[16-Jul-2025 21:41:49 UTC] PHPMailer debug (2): SERVER -> CLIENT: 250 2.1.0 OK ffacd0b85a97d-3b612db7060sm1183398f8f.52 - gsmtp
+
+[16-Jul-2025 21:41:49 UTC] PHPMailer debug (1): CLIENT -> SERVER: RCPT TO:<uwalaurene250@gmail.com>
+
+[16-Jul-2025 21:41:49 UTC] PHPMailer debug (2): SERVER -> CLIENT: 250 2.1.5 OK ffacd0b85a97d-3b612db7060sm1183398f8f.52 - gsmtp
+
+[16-Jul-2025 21:41:49 UTC] PHPMailer debug (1): CLIENT -> SERVER: DATA
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (2): SERVER -> CLIENT: 354 Go ahead ffacd0b85a97d-3b612db7060sm1183398f8f.52 - gsmtp
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER: Date: Wed, 16 Jul 2025 21:41:46 +0000
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER: To: Uwizeye Vivine <uwalaurene250@gmail.com>
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER: From: SchoolComm <schoolcomm001@gmail.com>
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER: Subject: Feedback Received - SchoolComm
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER: Message-ID: <SxWoagVBAgIpN5kXjwqFqHJU0XnE7NMR1heRd0wU@localhost>
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER: X-Priority: 1
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER: X-Mailer: PHPMailer 6.10.0 (https://github.com/PHPMailer/PHPMailer)
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER: X-MSMail-Priority: High
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER: Importance: High
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER: MIME-Version: 1.0
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER: Content-Type: multipart/alternative;
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:  boundary="b1=_SxWoagVBAgIpN5kXjwqFqHJU0XnE7NMR1heRd0wU"
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER: Content-Transfer-Encoding: 8bit
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER: --b1=_SxWoagVBAgIpN5kXjwqFqHJU0XnE7NMR1heRd0wU
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER: Content-Type: text/plain; charset=us-ascii
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:             
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:             
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                 
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         Feedback Confirmation
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     Dear Uwizeye Vivine,
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     Thank you for submitting your feedback to SchoolComm. We appreciate your input and will carefully review your comments.
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         Feedback Details:
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                             Type: Other
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                             Subject: food
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                             Date: July 16, 2025, 9:41 pm
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     We will process your feedback and take appropriate action if necessary. If your feedback requires a response, our team will contact you soon.
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     Best regards,SchoolComm Team
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         This is an automated message. Please do not reply to this email.
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                 
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:             
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:             
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER: --b1=_SxWoagVBAgIpN5kXjwqFqHJU0XnE7NMR1heRd0wU
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER: Content-Type: text/html; charset=us-ascii
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:             <html>
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:             <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                 <div style='max-width: 600px; margin: 0 auto; padding: 20px;'>
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <div style='text-align: center; margin-bottom: 30px;'>
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         <h2 style='color: #007bff;'>Feedback Confirmation</h2>
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     </div>
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <p><strong>Dear Uwizeye Vivine,</strong></p>
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <p>Thank you for submitting your feedback to SchoolComm. We appreciate your input and will carefully review your comments.</p>
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <div style='background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;'>
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         <p><strong>Feedback Details:</strong></p>
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         <ul style='list-style: none; padding-left: 0;'>
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                             <li><strong>Type:</strong> Other</li>
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                             <li><strong>Subject:</strong> food</li>
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                             <li><strong>Date:</strong> July 16, 2025, 9:41 pm</li>
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         </ul>
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     </div>
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <p>We will process your feedback and take appropriate action if necessary. If your feedback requires a response, our team will contact you soon.</p>
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <p>Best regards,<br>SchoolComm Team</p>
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <div style='margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666;'>
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         <p>This is an automated message. Please do not reply to this email.</p>
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     </div>
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:                 </div>
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:             </body>
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER:             </html>
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER: --b1=_SxWoagVBAgIpN5kXjwqFqHJU0XnE7NMR1heRd0wU--
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER: .
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (2): SERVER -> CLIENT: 250 2.0.0 OK  1752702111 ffacd0b85a97d-3b612db7060sm1183398f8f.52 - gsmtp
+
+[16-Jul-2025 21:41:51 UTC] PHPMailer debug (1): CLIENT -> SERVER: QUIT
+
+[16-Jul-2025 21:41:52 UTC] PHPMailer debug (2): SERVER -> CLIENT: 221 2.0.0 closing connection ffacd0b85a97d-3b612db7060sm1183398f8f.52 - gsmtp
+
+[16-Jul-2025 21:41:52 UTC] PHPMailer debug (3): Connection: closed
+[16-Jul-2025 21:41:52 UTC] Feedback confirmation email sent successfully to: uwalaurene250@gmail.com
+[16-Jul-2025 21:41:54 UTC] Python command: python "C:\xampp\htdocs\pro\python\sentiment_analysis.py" "food is dirty" 2>&1
+[16-Jul-2025 21:41:54 UTC] Python output: {"sentiment_label": "Neutral", "sentiment_score": 0.5, "confidence": 0.5, "suggestion": "Thank you for your feedback. We will review and address your concerns.", "success": false, "error": "[Errno 2] No such file or directory: 'sentiment_model.pkl'"}
+
+[16-Jul-2025 21:43:53 UTC] Python command: python "C:\xampp\htdocs\pro\python\sentiment_analysis.py" "food is dirty" 2>&1
+[16-Jul-2025 21:43:53 UTC] Python output: {"sentiment_label": "Neutral", "sentiment_score": 0.5, "confidence": 0.5, "suggestion": "Thank you for your feedback. We will review and address your concerns.", "success": false, "error": "[Errno 2] No such file or directory: 'sentiment_model.pkl'"}
+
+[16-Jul-2025 21:43:57 UTC] Python command: python "C:\xampp\htdocs\pro\python\sentiment_analysis.py" "food is dirty" 2>&1
+[16-Jul-2025 21:43:57 UTC] Python output: {"sentiment_label": "Neutral", "sentiment_score": 0.5, "confidence": 0.5, "suggestion": "Thank you for your feedback. We will review and address your concerns.", "success": false, "error": "[Errno 2] No such file or directory: 'sentiment_model.pkl'"}
+
+[16-Jul-2025 21:43:59 UTC] Attempting to send feedback confirmation email to: uwalaurene250@gmail.com
+[16-Jul-2025 21:43:59 UTC] Attempting to send email to: uwalaurene250@gmail.com
+[16-Jul-2025 21:43:59 UTC] PHPMailer debug (3): Connection: opening to ssl://smtp.gmail.com:465, timeout=300, options=array (
+  'ssl' => 
+  array (
+    'verify_peer' => false,
+    'verify_peer_name' => false,
+    'allow_self_signed' => true,
+  ),
+)
+[16-Jul-2025 21:44:01 UTC] PHPMailer debug (3): Connection: opened
+[16-Jul-2025 21:44:01 UTC] PHPMailer debug (2): SERVER -> CLIENT: 220 smtp.gmail.com ESMTP 5b1f17b1804b1-4562e89c87esm31797355e9.33 - gsmtp
+
+[16-Jul-2025 21:44:01 UTC] PHPMailer debug (1): CLIENT -> SERVER: EHLO localhost
+
+[16-Jul-2025 21:44:02 UTC] PHPMailer debug (2): SERVER -> CLIENT: 250-smtp.gmail.com at your service, [41.186.194.52]
+250-SIZE 35882577
+250-8BITMIME
+250-AUTH LOGIN PLAIN XOAUTH2 PLAIN-CLIENTTOKEN OAUTHBEARER XOAUTH
+250-ENHANCEDSTATUSCODES
+250-PIPELINING
+250-CHUNKING
+250 SMTPUTF8
+
+[16-Jul-2025 21:44:02 UTC] PHPMailer debug (1): CLIENT -> SERVER: AUTH LOGIN
+
+[16-Jul-2025 21:44:02 UTC] PHPMailer debug (2): SERVER -> CLIENT: 334 VXNlcm5hbWU6
+
+[16-Jul-2025 21:44:02 UTC] PHPMailer debug (1): CLIENT -> SERVER: [credentials hidden]
+[16-Jul-2025 21:44:02 UTC] PHPMailer debug (2): SERVER -> CLIENT: 334 UGFzc3dvcmQ6
+
+[16-Jul-2025 21:44:02 UTC] PHPMailer debug (1): CLIENT -> SERVER: [credentials hidden]
+[16-Jul-2025 21:44:03 UTC] PHPMailer debug (2): SERVER -> CLIENT: 235 2.7.0 Accepted
+
+[16-Jul-2025 21:44:03 UTC] PHPMailer debug (1): CLIENT -> SERVER: MAIL FROM:<schoolcomm001@gmail.com>
+
+[16-Jul-2025 21:44:03 UTC] PHPMailer debug (2): SERVER -> CLIENT: 250 2.1.0 OK 5b1f17b1804b1-4562e89c87esm31797355e9.33 - gsmtp
+
+[16-Jul-2025 21:44:03 UTC] PHPMailer debug (1): CLIENT -> SERVER: RCPT TO:<uwalaurene250@gmail.com>
+
+[16-Jul-2025 21:44:03 UTC] PHPMailer debug (2): SERVER -> CLIENT: 250 2.1.5 OK 5b1f17b1804b1-4562e89c87esm31797355e9.33 - gsmtp
+
+[16-Jul-2025 21:44:03 UTC] PHPMailer debug (1): CLIENT -> SERVER: DATA
+
+[16-Jul-2025 21:44:03 UTC] PHPMailer debug (2): SERVER -> CLIENT: 354 Go ahead 5b1f17b1804b1-4562e89c87esm31797355e9.33 - gsmtp
+
+[16-Jul-2025 21:44:03 UTC] PHPMailer debug (1): CLIENT -> SERVER: Date: Wed, 16 Jul 2025 21:43:59 +0000
+
+[16-Jul-2025 21:44:03 UTC] PHPMailer debug (1): CLIENT -> SERVER: To: Uwizeye Vivine <uwalaurene250@gmail.com>
+
+[16-Jul-2025 21:44:03 UTC] PHPMailer debug (1): CLIENT -> SERVER: From: SchoolComm <schoolcomm001@gmail.com>
+
+[16-Jul-2025 21:44:03 UTC] PHPMailer debug (1): CLIENT -> SERVER: Subject: Feedback Received - SchoolComm
+
+[16-Jul-2025 21:44:03 UTC] PHPMailer debug (1): CLIENT -> SERVER: Message-ID: <1vv1bfZb7D5YZ1tcwPszWAQaWXc4dZDL0kfjMfyPI9Q@localhost>
+
+[16-Jul-2025 21:44:03 UTC] PHPMailer debug (1): CLIENT -> SERVER: X-Priority: 1
+
+[16-Jul-2025 21:44:03 UTC] PHPMailer debug (1): CLIENT -> SERVER: X-Mailer: PHPMailer 6.10.0 (https://github.com/PHPMailer/PHPMailer)
+
+[16-Jul-2025 21:44:03 UTC] PHPMailer debug (1): CLIENT -> SERVER: X-MSMail-Priority: High
+
+[16-Jul-2025 21:44:03 UTC] PHPMailer debug (1): CLIENT -> SERVER: Importance: High
+
+[16-Jul-2025 21:44:03 UTC] PHPMailer debug (1): CLIENT -> SERVER: MIME-Version: 1.0
+
+[16-Jul-2025 21:44:03 UTC] PHPMailer debug (1): CLIENT -> SERVER: Content-Type: multipart/alternative;
+
+[16-Jul-2025 21:44:03 UTC] PHPMailer debug (1): CLIENT -> SERVER:  boundary="b1=_1vv1bfZb7D5YZ1tcwPszWAQaWXc4dZDL0kfjMfyPI9Q"
+
+[16-Jul-2025 21:44:03 UTC] PHPMailer debug (1): CLIENT -> SERVER: Content-Transfer-Encoding: 8bit
+
+[16-Jul-2025 21:44:03 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:44:03 UTC] PHPMailer debug (1): CLIENT -> SERVER: --b1=_1vv1bfZb7D5YZ1tcwPszWAQaWXc4dZDL0kfjMfyPI9Q
+
+[16-Jul-2025 21:44:03 UTC] PHPMailer debug (1): CLIENT -> SERVER: Content-Type: text/plain; charset=us-ascii
+
+[16-Jul-2025 21:44:03 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:44:03 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:44:04 UTC] PHPMailer debug (1): CLIENT -> SERVER:             
+
+[16-Jul-2025 21:44:04 UTC] PHPMailer debug (1): CLIENT -> SERVER:             
+
+[16-Jul-2025 21:44:04 UTC] PHPMailer debug (1): CLIENT -> SERVER:                 
+
+[16-Jul-2025 21:44:04 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:44:04 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         Feedback Confirmation
+
+[16-Jul-2025 21:44:04 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:44:06 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:44:06 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     Dear Uwizeye Vivine,
+
+[16-Jul-2025 21:44:06 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:44:06 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     Thank you for submitting your feedback to SchoolComm. We appreciate your input and will carefully review your comments.
+
+[16-Jul-2025 21:44:06 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:44:07 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:44:07 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         Feedback Details:
+
+[16-Jul-2025 21:44:07 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         
+
+[16-Jul-2025 21:44:07 UTC] PHPMailer debug (1): CLIENT -> SERVER:                             Type: Other
+
+[16-Jul-2025 21:44:07 UTC] PHPMailer debug (1): CLIENT -> SERVER:                             Subject: food
+
+[16-Jul-2025 21:44:07 UTC] PHPMailer debug (1): CLIENT -> SERVER:                             Date: July 16, 2025, 9:43 pm
+
+[16-Jul-2025 21:44:07 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         
+
+[16-Jul-2025 21:44:08 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:44:08 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:44:08 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     We will process your feedback and take appropriate action if necessary. If your feedback requires a response, our team will contact you soon.
+
+[16-Jul-2025 21:44:08 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:44:08 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     Best regards,SchoolComm Team
+
+[16-Jul-2025 21:44:08 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:44:08 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:44:08 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         This is an automated message. Please do not reply to this email.
+
+[16-Jul-2025 21:44:08 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:44:08 UTC] PHPMailer debug (1): CLIENT -> SERVER:                 
+
+[16-Jul-2025 21:44:08 UTC] PHPMailer debug (1): CLIENT -> SERVER:             
+
+[16-Jul-2025 21:44:08 UTC] PHPMailer debug (1): CLIENT -> SERVER:             
+
+[16-Jul-2025 21:44:09 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:44:09 UTC] PHPMailer debug (1): CLIENT -> SERVER: --b1=_1vv1bfZb7D5YZ1tcwPszWAQaWXc4dZDL0kfjMfyPI9Q
+
+[16-Jul-2025 21:44:09 UTC] PHPMailer debug (1): CLIENT -> SERVER: Content-Type: text/html; charset=us-ascii
+
+[16-Jul-2025 21:44:09 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:44:09 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:44:09 UTC] PHPMailer debug (1): CLIENT -> SERVER:             <html>
+
+[16-Jul-2025 21:44:09 UTC] PHPMailer debug (1): CLIENT -> SERVER:             <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
+
+[16-Jul-2025 21:44:09 UTC] PHPMailer debug (1): CLIENT -> SERVER:                 <div style='max-width: 600px; margin: 0 auto; padding: 20px;'>
+
+[16-Jul-2025 21:44:09 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <div style='text-align: center; margin-bottom: 30px;'>
+
+[16-Jul-2025 21:44:09 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         <h2 style='color: #007bff;'>Feedback Confirmation</h2>
+
+[16-Jul-2025 21:44:09 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     </div>
+
+[16-Jul-2025 21:44:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:44:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <p><strong>Dear Uwizeye Vivine,</strong></p>
+
+[16-Jul-2025 21:44:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:44:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <p>Thank you for submitting your feedback to SchoolComm. We appreciate your input and will carefully review your comments.</p>
+
+[16-Jul-2025 21:44:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:44:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <div style='background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;'>
+
+[16-Jul-2025 21:44:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         <p><strong>Feedback Details:</strong></p>
+
+[16-Jul-2025 21:44:11 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         <ul style='list-style: none; padding-left: 0;'>
+
+[16-Jul-2025 21:44:11 UTC] PHPMailer debug (1): CLIENT -> SERVER:                             <li><strong>Type:</strong> Other</li>
+
+[16-Jul-2025 21:44:11 UTC] PHPMailer debug (1): CLIENT -> SERVER:                             <li><strong>Subject:</strong> food</li>
+
+[16-Jul-2025 21:44:11 UTC] PHPMailer debug (1): CLIENT -> SERVER:                             <li><strong>Date:</strong> July 16, 2025, 9:43 pm</li>
+
+[16-Jul-2025 21:44:11 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         </ul>
+
+[16-Jul-2025 21:44:11 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     </div>
+
+[16-Jul-2025 21:44:11 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:44:11 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <p>We will process your feedback and take appropriate action if necessary. If your feedback requires a response, our team will contact you soon.</p>
+
+[16-Jul-2025 21:44:11 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:44:11 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <p>Best regards,<br>SchoolComm Team</p>
+
+[16-Jul-2025 21:44:11 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:44:11 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <div style='margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666;'>
+
+[16-Jul-2025 21:44:11 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         <p>This is an automated message. Please do not reply to this email.</p>
+
+[16-Jul-2025 21:44:11 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     </div>
+
+[16-Jul-2025 21:44:11 UTC] PHPMailer debug (1): CLIENT -> SERVER:                 </div>
+
+[16-Jul-2025 21:44:12 UTC] PHPMailer debug (1): CLIENT -> SERVER:             </body>
+
+[16-Jul-2025 21:44:12 UTC] PHPMailer debug (1): CLIENT -> SERVER:             </html>
+
+[16-Jul-2025 21:44:12 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:44:12 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:44:12 UTC] PHPMailer debug (1): CLIENT -> SERVER: --b1=_1vv1bfZb7D5YZ1tcwPszWAQaWXc4dZDL0kfjMfyPI9Q--
+
+[16-Jul-2025 21:44:12 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:44:12 UTC] PHPMailer debug (1): CLIENT -> SERVER: .
+
+[16-Jul-2025 21:44:13 UTC] PHPMailer debug (2): SERVER -> CLIENT: 250 2.0.0 OK  1752702252 5b1f17b1804b1-4562e89c87esm31797355e9.33 - gsmtp
+
+[16-Jul-2025 21:44:13 UTC] PHPMailer debug (1): CLIENT -> SERVER: QUIT
+
+[16-Jul-2025 21:44:13 UTC] PHPMailer debug (2): SERVER -> CLIENT: 221 2.0.0 closing connection 5b1f17b1804b1-4562e89c87esm31797355e9.33 - gsmtp
+
+[16-Jul-2025 21:44:13 UTC] PHPMailer debug (3): Connection: closed
+[16-Jul-2025 21:44:13 UTC] Feedback confirmation email sent successfully to: uwalaurene250@gmail.com
+[16-Jul-2025 21:47:31 UTC] Sentiment analysis command: python C:^\xampp^\htdocs^\pro^\parent/../python/sentiment_analysis.py "food is dirty" 2>&1
+[16-Jul-2025 21:47:31 UTC] Sentiment analysis output: ERROR: Invalid syntax. Default option is not allowed more than '1' time(s).
+Type "TIMEOUT /?" for usage.
+
+[16-Jul-2025 21:47:32 UTC] Attempting to send feedback confirmation email to: uwalaurene250@gmail.com
+[16-Jul-2025 21:47:32 UTC] Attempting to send email to: uwalaurene250@gmail.com
+[16-Jul-2025 21:47:32 UTC] PHPMailer debug (3): Connection: opening to ssl://smtp.gmail.com:465, timeout=300, options=array (
+  'ssl' => 
+  array (
+    'verify_peer' => false,
+    'verify_peer_name' => false,
+    'allow_self_signed' => true,
+  ),
+)
+[16-Jul-2025 21:47:33 UTC] PHPMailer debug (3): Connection: opened
+[16-Jul-2025 21:47:34 UTC] PHPMailer debug (2): SERVER -> CLIENT: 220 smtp.gmail.com ESMTP ffacd0b85a97d-3b5e8bd18a2sm18794835f8f.20 - gsmtp
+
+[16-Jul-2025 21:47:34 UTC] PHPMailer debug (1): CLIENT -> SERVER: EHLO localhost
+
+[16-Jul-2025 21:47:34 UTC] PHPMailer debug (2): SERVER -> CLIENT: 250-smtp.gmail.com at your service, [41.186.194.52]
+250-SIZE 36700160
+250-8BITMIME
+250-AUTH LOGIN PLAIN XOAUTH2 PLAIN-CLIENTTOKEN OAUTHBEARER XOAUTH
+250-ENHANCEDSTATUSCODES
+250-PIPELINING
+250-CHUNKING
+250 SMTPUTF8
+
+[16-Jul-2025 21:47:34 UTC] PHPMailer debug (1): CLIENT -> SERVER: AUTH LOGIN
+
+[16-Jul-2025 21:47:34 UTC] PHPMailer debug (2): SERVER -> CLIENT: 334 VXNlcm5hbWU6
+
+[16-Jul-2025 21:47:34 UTC] PHPMailer debug (1): CLIENT -> SERVER: [credentials hidden]
+[16-Jul-2025 21:47:35 UTC] PHPMailer debug (2): SERVER -> CLIENT: 334 UGFzc3dvcmQ6
+
+[16-Jul-2025 21:47:35 UTC] PHPMailer debug (1): CLIENT -> SERVER: [credentials hidden]
+[16-Jul-2025 21:47:35 UTC] PHPMailer debug (2): SERVER -> CLIENT: 235 2.7.0 Accepted
+
+[16-Jul-2025 21:47:35 UTC] PHPMailer debug (1): CLIENT -> SERVER: MAIL FROM:<schoolcomm001@gmail.com>
+
+[16-Jul-2025 21:47:36 UTC] PHPMailer debug (2): SERVER -> CLIENT: 250 2.1.0 OK ffacd0b85a97d-3b5e8bd18a2sm18794835f8f.20 - gsmtp
+
+[16-Jul-2025 21:47:36 UTC] PHPMailer debug (1): CLIENT -> SERVER: RCPT TO:<uwalaurene250@gmail.com>
+
+[16-Jul-2025 21:47:36 UTC] PHPMailer debug (2): SERVER -> CLIENT: 250 2.1.5 OK ffacd0b85a97d-3b5e8bd18a2sm18794835f8f.20 - gsmtp
+
+[16-Jul-2025 21:47:36 UTC] PHPMailer debug (1): CLIENT -> SERVER: DATA
+
+[16-Jul-2025 21:47:36 UTC] PHPMailer debug (2): SERVER -> CLIENT: 354 Go ahead ffacd0b85a97d-3b5e8bd18a2sm18794835f8f.20 - gsmtp
+
+[16-Jul-2025 21:47:36 UTC] PHPMailer debug (1): CLIENT -> SERVER: Date: Wed, 16 Jul 2025 21:47:32 +0000
+
+[16-Jul-2025 21:47:37 UTC] PHPMailer debug (1): CLIENT -> SERVER: To: Uwizeye Vivine <uwalaurene250@gmail.com>
+
+[16-Jul-2025 21:47:37 UTC] PHPMailer debug (1): CLIENT -> SERVER: From: SchoolComm <schoolcomm001@gmail.com>
+
+[16-Jul-2025 21:47:37 UTC] PHPMailer debug (1): CLIENT -> SERVER: Subject: Feedback Received - SchoolComm
+
+[16-Jul-2025 21:47:37 UTC] PHPMailer debug (1): CLIENT -> SERVER: Message-ID: <HKhWS4PAeoFHcdODmdOBM6r7S4CE0kIFZoYN61tXM0@localhost>
+
+[16-Jul-2025 21:47:37 UTC] PHPMailer debug (1): CLIENT -> SERVER: X-Priority: 1
+
+[16-Jul-2025 21:47:37 UTC] PHPMailer debug (1): CLIENT -> SERVER: X-Mailer: PHPMailer 6.10.0 (https://github.com/PHPMailer/PHPMailer)
+
+[16-Jul-2025 21:47:37 UTC] PHPMailer debug (1): CLIENT -> SERVER: X-MSMail-Priority: High
+
+[16-Jul-2025 21:47:37 UTC] PHPMailer debug (1): CLIENT -> SERVER: Importance: High
+
+[16-Jul-2025 21:47:38 UTC] PHPMailer debug (1): CLIENT -> SERVER: MIME-Version: 1.0
+
+[16-Jul-2025 21:47:38 UTC] PHPMailer debug (1): CLIENT -> SERVER: Content-Type: multipart/alternative;
+
+[16-Jul-2025 21:47:38 UTC] PHPMailer debug (1): CLIENT -> SERVER:  boundary="b1=_HKhWS4PAeoFHcdODmdOBM6r7S4CE0kIFZoYN61tXM0"
+
+[16-Jul-2025 21:47:38 UTC] PHPMailer debug (1): CLIENT -> SERVER: Content-Transfer-Encoding: 8bit
+
+[16-Jul-2025 21:47:38 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:47:38 UTC] PHPMailer debug (1): CLIENT -> SERVER: --b1=_HKhWS4PAeoFHcdODmdOBM6r7S4CE0kIFZoYN61tXM0
+
+[16-Jul-2025 21:47:39 UTC] PHPMailer debug (1): CLIENT -> SERVER: Content-Type: text/plain; charset=us-ascii
+
+[16-Jul-2025 21:47:39 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:47:39 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:47:39 UTC] PHPMailer debug (1): CLIENT -> SERVER:             
+
+[16-Jul-2025 21:47:39 UTC] PHPMailer debug (1): CLIENT -> SERVER:             
+
+[16-Jul-2025 21:47:39 UTC] PHPMailer debug (1): CLIENT -> SERVER:                 
+
+[16-Jul-2025 21:47:39 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:47:39 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         Feedback Confirmation
+
+[16-Jul-2025 21:47:39 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:47:39 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:47:39 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     Dear Uwizeye Vivine,
+
+[16-Jul-2025 21:47:39 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:47:39 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     Thank you for submitting your feedback to SchoolComm. We appreciate your input and will carefully review your comments.
+
+[16-Jul-2025 21:47:39 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:47:39 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:47:39 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         Feedback Details:
+
+[16-Jul-2025 21:47:39 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         
+
+[16-Jul-2025 21:47:39 UTC] PHPMailer debug (1): CLIENT -> SERVER:                             Type: Other
+
+[16-Jul-2025 21:47:39 UTC] PHPMailer debug (1): CLIENT -> SERVER:                             Subject: food
+
+[16-Jul-2025 21:47:39 UTC] PHPMailer debug (1): CLIENT -> SERVER:                             Date: July 16, 2025, 9:47 pm
+
+[16-Jul-2025 21:47:39 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         
+
+[16-Jul-2025 21:47:39 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:47:39 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:47:39 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     We will process your feedback and take appropriate action if necessary. If your feedback requires a response, our team will contact you soon.
+
+[16-Jul-2025 21:47:39 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:47:39 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     Best regards,SchoolComm Team
+
+[16-Jul-2025 21:47:39 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:47:39 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:47:39 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         This is an automated message. Please do not reply to this email.
+
+[16-Jul-2025 21:47:39 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:47:40 UTC] PHPMailer debug (1): CLIENT -> SERVER:                 
+
+[16-Jul-2025 21:47:40 UTC] PHPMailer debug (1): CLIENT -> SERVER:             
+
+[16-Jul-2025 21:47:40 UTC] PHPMailer debug (1): CLIENT -> SERVER:             
+
+[16-Jul-2025 21:47:40 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:47:40 UTC] PHPMailer debug (1): CLIENT -> SERVER: --b1=_HKhWS4PAeoFHcdODmdOBM6r7S4CE0kIFZoYN61tXM0
+
+[16-Jul-2025 21:47:40 UTC] PHPMailer debug (1): CLIENT -> SERVER: Content-Type: text/html; charset=us-ascii
+
+[16-Jul-2025 21:47:40 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:47:40 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:47:40 UTC] PHPMailer debug (1): CLIENT -> SERVER:             <html>
+
+[16-Jul-2025 21:47:40 UTC] PHPMailer debug (1): CLIENT -> SERVER:             <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
+
+[16-Jul-2025 21:47:40 UTC] PHPMailer debug (1): CLIENT -> SERVER:                 <div style='max-width: 600px; margin: 0 auto; padding: 20px;'>
+
+[16-Jul-2025 21:47:40 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <div style='text-align: center; margin-bottom: 30px;'>
+
+[16-Jul-2025 21:47:40 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         <h2 style='color: #007bff;'>Feedback Confirmation</h2>
+
+[16-Jul-2025 21:47:41 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     </div>
+
+[16-Jul-2025 21:47:41 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:47:42 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <p><strong>Dear Uwizeye Vivine,</strong></p>
+
+[16-Jul-2025 21:47:42 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:47:42 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <p>Thank you for submitting your feedback to SchoolComm. We appreciate your input and will carefully review your comments.</p>
+
+[16-Jul-2025 21:47:42 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:47:43 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <div style='background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;'>
+
+[16-Jul-2025 21:47:43 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         <p><strong>Feedback Details:</strong></p>
+
+[16-Jul-2025 21:47:43 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         <ul style='list-style: none; padding-left: 0;'>
+
+[16-Jul-2025 21:47:43 UTC] PHPMailer debug (1): CLIENT -> SERVER:                             <li><strong>Type:</strong> Other</li>
+
+[16-Jul-2025 21:47:43 UTC] PHPMailer debug (1): CLIENT -> SERVER:                             <li><strong>Subject:</strong> food</li>
+
+[16-Jul-2025 21:47:43 UTC] PHPMailer debug (1): CLIENT -> SERVER:                             <li><strong>Date:</strong> July 16, 2025, 9:47 pm</li>
+
+[16-Jul-2025 21:47:43 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         </ul>
+
+[16-Jul-2025 21:47:43 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     </div>
+
+[16-Jul-2025 21:47:43 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:47:43 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <p>We will process your feedback and take appropriate action if necessary. If your feedback requires a response, our team will contact you soon.</p>
+
+[16-Jul-2025 21:47:43 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:47:43 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <p>Best regards,<br>SchoolComm Team</p>
+
+[16-Jul-2025 21:47:43 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:47:43 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <div style='margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666;'>
+
+[16-Jul-2025 21:47:43 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         <p>This is an automated message. Please do not reply to this email.</p>
+
+[16-Jul-2025 21:47:43 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     </div>
+
+[16-Jul-2025 21:47:44 UTC] PHPMailer debug (1): CLIENT -> SERVER:                 </div>
+
+[16-Jul-2025 21:47:44 UTC] PHPMailer debug (1): CLIENT -> SERVER:             </body>
+
+[16-Jul-2025 21:47:44 UTC] PHPMailer debug (1): CLIENT -> SERVER:             </html>
+
+[16-Jul-2025 21:47:44 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:47:44 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:47:44 UTC] PHPMailer debug (1): CLIENT -> SERVER: --b1=_HKhWS4PAeoFHcdODmdOBM6r7S4CE0kIFZoYN61tXM0--
+
+[16-Jul-2025 21:47:44 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:47:44 UTC] PHPMailer debug (1): CLIENT -> SERVER: .
+
+[16-Jul-2025 21:47:45 UTC] PHPMailer debug (2): SERVER -> CLIENT: 250 2.0.0 OK  1752702464 ffacd0b85a97d-3b5e8bd18a2sm18794835f8f.20 - gsmtp
+
+[16-Jul-2025 21:47:45 UTC] PHPMailer debug (1): CLIENT -> SERVER: QUIT
+
+[16-Jul-2025 21:47:45 UTC] PHPMailer debug (2): SERVER -> CLIENT: 221 2.0.0 closing connection ffacd0b85a97d-3b5e8bd18a2sm18794835f8f.20 - gsmtp
+
+[16-Jul-2025 21:47:45 UTC] PHPMailer debug (3): Connection: closed
+[16-Jul-2025 21:47:45 UTC] Feedback confirmation email sent successfully to: uwalaurene250@gmail.com
+[16-Jul-2025 21:48:17 UTC] Python command: python "C:\xampp\htdocs\pro\python\sentiment_analysis.py" "food is dirty" 2>&1
+[16-Jul-2025 21:48:17 UTC] Python output: {"sentiment_label": "Neutral", "sentiment_score": 0.5, "confidence": 0.5, "suggestion": "Thank you for your feedback. We will review and address your concerns.", "success": false, "error": "[Errno 2] No such file or directory: 'sentiment_model.pkl'"}
+
+[16-Jul-2025 21:48:37 UTC] Python command: python "C:\xampp\htdocs\pro\python\sentiment_analysis.py" "food is dirty" 2>&1
+[16-Jul-2025 21:48:37 UTC] Python output: {"sentiment_label": "Neutral", "sentiment_score": 0.5, "confidence": 0.5, "suggestion": "Thank you for your feedback. We will review and address your concerns.", "success": false, "error": "[Errno 2] No such file or directory: 'sentiment_model.pkl'"}
+
+[16-Jul-2025 21:51:47 UTC] Python command: python "C:\xampp\htdocs\pro\python\sentiment_analysis.py" "food is dirty" 2>&1
+[16-Jul-2025 21:51:47 UTC] Python output: {"sentiment_label": "Neutral", "sentiment_score": 0.5, "confidence": 0.5, "suggestion": "Thank you for your feedback. We will review and address your concerns.", "success": false, "error": "[Errno 2] No such file or directory: 'sentiment_model.pkl'"}
+
+[16-Jul-2025 21:52:05 UTC] Python command: python "C:\xampp\htdocs\pro\python\sentiment_analysis.py" "food is dirty" 2>&1
+[16-Jul-2025 21:52:05 UTC] Python output: {"sentiment_label": "Neutral", "sentiment_score": 0.5, "confidence": 0.5, "suggestion": "Thank you for your feedback. We will review and address your concerns.", "success": false, "error": "[Errno 2] No such file or directory: 'sentiment_model.pkl'"}
+
+[16-Jul-2025 21:52:05 UTC] Sentiment analysis command: python C:^\xampp^\htdocs^\pro^\parent/../python/sentiment_analysis_fallback.py "food is dirty" 2>&1
+[16-Jul-2025 21:52:06 UTC] Sentiment analysis output: ERROR: Invalid syntax. Default option is not allowed more than '1' time(s).
+Type "TIMEOUT /?" for usage.
+
+[16-Jul-2025 21:52:06 UTC] Attempting to send feedback confirmation email to: uwalaurene250@gmail.com
+[16-Jul-2025 21:52:06 UTC] Attempting to send email to: uwalaurene250@gmail.com
+[16-Jul-2025 21:52:06 UTC] PHPMailer debug (3): Connection: opening to ssl://smtp.gmail.com:465, timeout=300, options=array (
+  'ssl' => 
+  array (
+    'verify_peer' => false,
+    'verify_peer_name' => false,
+    'allow_self_signed' => true,
+  ),
+)
+[16-Jul-2025 21:52:07 UTC] PHPMailer debug (3): Connection: opened
+[16-Jul-2025 21:52:07 UTC] PHPMailer debug (2): SERVER -> CLIENT: 220 smtp.gmail.com ESMTP ffacd0b85a97d-3b5e8dc229asm18892252f8f.35 - gsmtp
+
+[16-Jul-2025 21:52:07 UTC] PHPMailer debug (1): CLIENT -> SERVER: EHLO localhost
+
+[16-Jul-2025 21:52:08 UTC] PHPMailer debug (2): SERVER -> CLIENT: 250-smtp.gmail.com at your service, [41.186.194.52]
+250-SIZE 36700160
+250-8BITMIME
+250-AUTH LOGIN PLAIN XOAUTH2 PLAIN-CLIENTTOKEN OAUTHBEARER XOAUTH
+250-ENHANCEDSTATUSCODES
+250-PIPELINING
+250-CHUNKING
+250 SMTPUTF8
+
+[16-Jul-2025 21:52:08 UTC] PHPMailer debug (1): CLIENT -> SERVER: AUTH LOGIN
+
+[16-Jul-2025 21:52:08 UTC] PHPMailer debug (2): SERVER -> CLIENT: 334 VXNlcm5hbWU6
+
+[16-Jul-2025 21:52:08 UTC] PHPMailer debug (1): CLIENT -> SERVER: [credentials hidden]
+[16-Jul-2025 21:52:08 UTC] PHPMailer debug (2): SERVER -> CLIENT: 334 UGFzc3dvcmQ6
+
+[16-Jul-2025 21:52:08 UTC] PHPMailer debug (1): CLIENT -> SERVER: [credentials hidden]
+[16-Jul-2025 21:52:08 UTC] PHPMailer debug (2): SERVER -> CLIENT: 235 2.7.0 Accepted
+
+[16-Jul-2025 21:52:08 UTC] PHPMailer debug (1): CLIENT -> SERVER: MAIL FROM:<schoolcomm001@gmail.com>
+
+[16-Jul-2025 21:52:09 UTC] PHPMailer debug (2): SERVER -> CLIENT: 250 2.1.0 OK ffacd0b85a97d-3b5e8dc229asm18892252f8f.35 - gsmtp
+
+[16-Jul-2025 21:52:09 UTC] PHPMailer debug (1): CLIENT -> SERVER: RCPT TO:<uwalaurene250@gmail.com>
+
+[16-Jul-2025 21:52:09 UTC] PHPMailer debug (2): SERVER -> CLIENT: 250 2.1.5 OK ffacd0b85a97d-3b5e8dc229asm18892252f8f.35 - gsmtp
+
+[16-Jul-2025 21:52:09 UTC] PHPMailer debug (1): CLIENT -> SERVER: DATA
+
+[16-Jul-2025 21:52:09 UTC] PHPMailer debug (2): SERVER -> CLIENT: 354 Go ahead ffacd0b85a97d-3b5e8dc229asm18892252f8f.35 - gsmtp
+
+[16-Jul-2025 21:52:09 UTC] PHPMailer debug (1): CLIENT -> SERVER: Date: Wed, 16 Jul 2025 21:52:06 +0000
+
+[16-Jul-2025 21:52:09 UTC] PHPMailer debug (1): CLIENT -> SERVER: To: Uwizeye Vivine <uwalaurene250@gmail.com>
+
+[16-Jul-2025 21:52:09 UTC] PHPMailer debug (1): CLIENT -> SERVER: From: SchoolComm <schoolcomm001@gmail.com>
+
+[16-Jul-2025 21:52:09 UTC] PHPMailer debug (1): CLIENT -> SERVER: Subject: Feedback Received - SchoolComm
+
+[16-Jul-2025 21:52:09 UTC] PHPMailer debug (1): CLIENT -> SERVER: Message-ID: <QUPlXi6F4qfE40MXVgG5GFeLyqgh1hns46MIxtuzbGI@localhost>
+
+[16-Jul-2025 21:52:09 UTC] PHPMailer debug (1): CLIENT -> SERVER: X-Priority: 1
+
+[16-Jul-2025 21:52:09 UTC] PHPMailer debug (1): CLIENT -> SERVER: X-Mailer: PHPMailer 6.10.0 (https://github.com/PHPMailer/PHPMailer)
+
+[16-Jul-2025 21:52:09 UTC] PHPMailer debug (1): CLIENT -> SERVER: X-MSMail-Priority: High
+
+[16-Jul-2025 21:52:09 UTC] PHPMailer debug (1): CLIENT -> SERVER: Importance: High
+
+[16-Jul-2025 21:52:09 UTC] PHPMailer debug (1): CLIENT -> SERVER: MIME-Version: 1.0
+
+[16-Jul-2025 21:52:09 UTC] PHPMailer debug (1): CLIENT -> SERVER: Content-Type: multipart/alternative;
+
+[16-Jul-2025 21:52:09 UTC] PHPMailer debug (1): CLIENT -> SERVER:  boundary="b1=_QUPlXi6F4qfE40MXVgG5GFeLyqgh1hns46MIxtuzbGI"
+
+[16-Jul-2025 21:52:09 UTC] PHPMailer debug (1): CLIENT -> SERVER: Content-Transfer-Encoding: 8bit
+
+[16-Jul-2025 21:52:09 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:52:09 UTC] PHPMailer debug (1): CLIENT -> SERVER: --b1=_QUPlXi6F4qfE40MXVgG5GFeLyqgh1hns46MIxtuzbGI
+
+[16-Jul-2025 21:52:09 UTC] PHPMailer debug (1): CLIENT -> SERVER: Content-Type: text/plain; charset=us-ascii
+
+[16-Jul-2025 21:52:09 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:52:09 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:52:09 UTC] PHPMailer debug (1): CLIENT -> SERVER:             
+
+[16-Jul-2025 21:52:09 UTC] PHPMailer debug (1): CLIENT -> SERVER:             
+
+[16-Jul-2025 21:52:09 UTC] PHPMailer debug (1): CLIENT -> SERVER:                 
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         Feedback Confirmation
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     Dear Uwizeye Vivine,
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     Thank you for submitting your feedback to SchoolComm. We appreciate your input and will carefully review your comments.
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         Feedback Details:
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                             Type: Other
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                             Subject: food
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                             Date: July 16, 2025, 9:52 pm
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     We will process your feedback and take appropriate action if necessary. If your feedback requires a response, our team will contact you soon.
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     Best regards,SchoolComm Team
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         This is an automated message. Please do not reply to this email.
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                 
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:             
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:             
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER: --b1=_QUPlXi6F4qfE40MXVgG5GFeLyqgh1hns46MIxtuzbGI
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER: Content-Type: text/html; charset=us-ascii
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:             <html>
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:             <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                 <div style='max-width: 600px; margin: 0 auto; padding: 20px;'>
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <div style='text-align: center; margin-bottom: 30px;'>
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         <h2 style='color: #007bff;'>Feedback Confirmation</h2>
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     </div>
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <p><strong>Dear Uwizeye Vivine,</strong></p>
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <p>Thank you for submitting your feedback to SchoolComm. We appreciate your input and will carefully review your comments.</p>
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <div style='background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;'>
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         <p><strong>Feedback Details:</strong></p>
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         <ul style='list-style: none; padding-left: 0;'>
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                             <li><strong>Type:</strong> Other</li>
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                             <li><strong>Subject:</strong> food</li>
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                             <li><strong>Date:</strong> July 16, 2025, 9:52 pm</li>
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         </ul>
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     </div>
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <p>We will process your feedback and take appropriate action if necessary. If your feedback requires a response, our team will contact you soon.</p>
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <p>Best regards,<br>SchoolComm Team</p>
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <div style='margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666;'>
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         <p>This is an automated message. Please do not reply to this email.</p>
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     </div>
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:                 </div>
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:             </body>
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER:             </html>
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER: --b1=_QUPlXi6F4qfE40MXVgG5GFeLyqgh1hns46MIxtuzbGI--
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[16-Jul-2025 21:52:10 UTC] PHPMailer debug (1): CLIENT -> SERVER: .
+
+[16-Jul-2025 21:52:12 UTC] PHPMailer debug (2): SERVER -> CLIENT: 250 2.0.0 OK  1752702730 ffacd0b85a97d-3b5e8dc229asm18892252f8f.35 - gsmtp
+
+[16-Jul-2025 21:52:12 UTC] PHPMailer debug (1): CLIENT -> SERVER: QUIT
+
+[16-Jul-2025 21:52:12 UTC] PHPMailer debug (2): SERVER -> CLIENT: 221 2.0.0 closing connection ffacd0b85a97d-3b5e8dc229asm18892252f8f.35 - gsmtp
+
+[16-Jul-2025 21:52:12 UTC] PHPMailer debug (3): Connection: closed
+[16-Jul-2025 21:52:12 UTC] Feedback confirmation email sent successfully to: uwalaurene250@gmail.com
+[15-Aug-2025 15:45:58 UTC] Python command: python "C:\xampp\htdocs\pro\python\sentiment_analysis.py" "dirty food" 2>&1
+[15-Aug-2025 15:45:58 UTC] Python output: {"sentiment_label": "Neutral", "sentiment_score": 0.5, "confidence": 0.5, "suggestion": "Thank you for your feedback. We will review and address your concerns.", "success": false, "error": "[Errno 2] No such file or directory: 'sentiment_model.pkl'"}
+
+[15-Aug-2025 15:45:58 UTC] Sentiment analysis command: python C:^\xampp^\htdocs^\pro^\parent/../python/sentiment_analysis_fallback.py "dirty food" 2>&1
+[15-Aug-2025 15:45:58 UTC] Sentiment analysis output: ERROR: Invalid syntax. Default option is not allowed more than '1' time(s).
+Type "TIMEOUT /?" for usage.
+
+[15-Aug-2025 15:45:58 UTC] Attempting to send feedback confirmation email to: uwalaurene250@gmail.com
+[15-Aug-2025 15:45:58 UTC] Attempting to send email to: uwalaurene250@gmail.com
+[15-Aug-2025 15:45:58 UTC] PHPMailer debug (3): Connection: opening to ssl://smtp.gmail.com:465, timeout=300, options=array (
+  'ssl' => 
+  array (
+    'verify_peer' => false,
+    'verify_peer_name' => false,
+    'allow_self_signed' => true,
+  ),
+)
+[15-Aug-2025 15:46:00 UTC] PHPMailer debug (3): Connection: opened
+[15-Aug-2025 15:46:00 UTC] PHPMailer debug (2): SERVER -> CLIENT: 220 smtp.gmail.com ESMTP ffacd0b85a97d-3bb68079da7sm2301767f8f.56 - gsmtp
+
+[15-Aug-2025 15:46:00 UTC] PHPMailer debug (1): CLIENT -> SERVER: EHLO localhost
+
+[15-Aug-2025 15:46:00 UTC] PHPMailer debug (2): SERVER -> CLIENT: 250-smtp.gmail.com at your service, [197.157.184.158]
+250-SIZE 35882577
+250-8BITMIME
+250-AUTH LOGIN PLAIN XOAUTH2 PLAIN-CLIENTTOKEN OAUTHBEARER XOAUTH
+250-ENHANCEDSTATUSCODES
+250-PIPELINING
+250-CHUNKING
+250 SMTPUTF8
+
+[15-Aug-2025 15:46:00 UTC] PHPMailer debug (1): CLIENT -> SERVER: AUTH LOGIN
+
+[15-Aug-2025 15:46:00 UTC] PHPMailer debug (2): SERVER -> CLIENT: 334 VXNlcm5hbWU6
+
+[15-Aug-2025 15:46:00 UTC] PHPMailer debug (1): CLIENT -> SERVER: [credentials hidden]
+[15-Aug-2025 15:46:01 UTC] PHPMailer debug (2): SERVER -> CLIENT: 334 UGFzc3dvcmQ6
+
+[15-Aug-2025 15:46:01 UTC] PHPMailer debug (1): CLIENT -> SERVER: [credentials hidden]
+[15-Aug-2025 15:46:01 UTC] PHPMailer debug (2): SERVER -> CLIENT: 235 2.7.0 Accepted
+
+[15-Aug-2025 15:46:01 UTC] PHPMailer debug (1): CLIENT -> SERVER: MAIL FROM:<schoolcomm001@gmail.com>
+
+[15-Aug-2025 15:46:01 UTC] PHPMailer debug (2): SERVER -> CLIENT: 250 2.1.0 OK ffacd0b85a97d-3bb68079da7sm2301767f8f.56 - gsmtp
+
+[15-Aug-2025 15:46:01 UTC] PHPMailer debug (1): CLIENT -> SERVER: RCPT TO:<uwalaurene250@gmail.com>
+
+[15-Aug-2025 15:46:01 UTC] PHPMailer debug (2): SERVER -> CLIENT: 250 2.1.5 OK ffacd0b85a97d-3bb68079da7sm2301767f8f.56 - gsmtp
+
+[15-Aug-2025 15:46:01 UTC] PHPMailer debug (1): CLIENT -> SERVER: DATA
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (2): SERVER -> CLIENT: 354 Go ahead ffacd0b85a97d-3bb68079da7sm2301767f8f.56 - gsmtp
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER: Date: Fri, 15 Aug 2025 15:45:58 +0000
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER: To: Uwizeye Vivine <uwalaurene250@gmail.com>
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER: From: SchoolComm <schoolcomm001@gmail.com>
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER: Subject: Feedback Received - SchoolComm
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER: Message-ID: <2T9SFiHHPv7SFhQYAKm8Dwx7JSnGu5hmY63inZc@localhost>
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER: X-Priority: 1
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER: X-Mailer: PHPMailer 6.10.0 (https://github.com/PHPMailer/PHPMailer)
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER: X-MSMail-Priority: High
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER: Importance: High
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER: MIME-Version: 1.0
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER: Content-Type: multipart/alternative;
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:  boundary="b1=_2T9SFiHHPv7SFhQYAKm8Dwx7JSnGu5hmY63inZc"
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER: Content-Transfer-Encoding: 8bit
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER: --b1=_2T9SFiHHPv7SFhQYAKm8Dwx7JSnGu5hmY63inZc
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER: Content-Type: text/plain; charset=us-ascii
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:             
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:             
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                 
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         Feedback Confirmation
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     Dear Uwizeye Vivine,
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     Thank you for submitting your feedback to SchoolComm. We appreciate your input and will carefully review your comments.
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         Feedback Details:
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                             Type: Academic
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                             Subject: computer science
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                             Date: August 15, 2025, 3:45 pm
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     We will process your feedback and take appropriate action if necessary. If your feedback requires a response, our team will contact you soon.
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     Best regards,SchoolComm Team
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         This is an automated message. Please do not reply to this email.
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                 
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:             
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:             
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER: --b1=_2T9SFiHHPv7SFhQYAKm8Dwx7JSnGu5hmY63inZc
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER: Content-Type: text/html; charset=us-ascii
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:             <html>
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:             <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                 <div style='max-width: 600px; margin: 0 auto; padding: 20px;'>
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <div style='text-align: center; margin-bottom: 30px;'>
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         <h2 style='color: #007bff;'>Feedback Confirmation</h2>
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     </div>
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <p><strong>Dear Uwizeye Vivine,</strong></p>
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <p>Thank you for submitting your feedback to SchoolComm. We appreciate your input and will carefully review your comments.</p>
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <div style='background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;'>
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         <p><strong>Feedback Details:</strong></p>
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         <ul style='list-style: none; padding-left: 0;'>
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                             <li><strong>Type:</strong> Academic</li>
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                             <li><strong>Subject:</strong> computer science</li>
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                             <li><strong>Date:</strong> August 15, 2025, 3:45 pm</li>
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         </ul>
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     </div>
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <p>We will process your feedback and take appropriate action if necessary. If your feedback requires a response, our team will contact you soon.</p>
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <p>Best regards,<br>SchoolComm Team</p>
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     <div style='margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666;'>
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                         <p>This is an automated message. Please do not reply to this email.</p>
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                     </div>
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:                 </div>
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:             </body>
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER:             </html>
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER: --b1=_2T9SFiHHPv7SFhQYAKm8Dwx7JSnGu5hmY63inZc--
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER: 
+
+[15-Aug-2025 15:46:02 UTC] PHPMailer debug (1): CLIENT -> SERVER: .
+
+[15-Aug-2025 15:46:03 UTC] PHPMailer debug (2): SERVER -> CLIENT: 250 2.0.0 OK  1755272763 ffacd0b85a97d-3bb68079da7sm2301767f8f.56 - gsmtp
+
+[15-Aug-2025 15:46:03 UTC] PHPMailer debug (1): CLIENT -> SERVER: QUIT
+
+[15-Aug-2025 15:46:04 UTC] PHPMailer debug (2): SERVER -> CLIENT: 221 2.0.0 closing connection ffacd0b85a97d-3bb68079da7sm2301767f8f.56 - gsmtp
+
+[15-Aug-2025 15:46:04 UTC] PHPMailer debug (3): Connection: closed
+[15-Aug-2025 15:46:04 UTC] Feedback confirmation email sent successfully to: uwalaurene250@gmail.com
+[15-Aug-2025 15:46:06 UTC] Python command: python "C:\xampp\htdocs\pro\python\sentiment_analysis.py" "dirty food" 2>&1
+[15-Aug-2025 15:46:06 UTC] Python output: {"sentiment_label": "Neutral", "sentiment_score": 0.5, "confidence": 0.5, "suggestion": "Thank you for your feedback. We will review and address your concerns.", "success": false, "error": "[Errno 2] No such file or directory: 'sentiment_model.pkl'"}
+
